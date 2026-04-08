@@ -8,7 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
+    body { font-family: 'Inter', sans-serif; background: #f1f5f9; overflow-x: hidden; }
+    html { overflow-x: hidden; }
     .sidebar-link { transition: all 0.15s; }
     .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,0.15); border-left: 3px solid #60a5fa; }
     .sidebar-link { border-left: 3px solid transparent; }
@@ -37,6 +38,19 @@
     .step-done { background: #22c55e; }
     .step-active { background: #2563eb; }
     .step-pending { background: #e2e8f0; }
+    /* Sidebar mobile */
+    #sidebar { transition: transform 0.3s ease; }
+    #sidebar.sidebar-hidden { transform: translateX(-100%); }
+    #sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:25; }
+    #sidebar-overlay.active { display:block; }
+    /* Tabla responsive */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* Chat mobile */
+    @media (max-width: 767px) {
+      .chat-height { height: 55vh !important; }
+      .steps-mobile { flex-wrap: wrap; gap: 8px; }
+      .steps-mobile .step-connector { display: none; }
+    }
   </style>
 </head>
 <body class="min-h-screen">
@@ -44,16 +58,20 @@
 <!-- LAYOUT -->
 <div class="flex min-h-screen">
 
+  <!-- Overlay móvil -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
   <!-- SIDEBAR -->
-  <aside class="w-60 bg-slate-800 text-white flex flex-col fixed h-full z-30" id="sidebar">
+  <aside class="w-64 bg-slate-800 text-white flex flex-col fixed h-full z-30 sidebar-hidden md:transform-none" id="sidebar">
     <!-- Logo -->
     <div class="px-5 py-5 border-b border-slate-700">
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">G</div>
-        <div>
+        <div class="flex-1">
           <div class="font-bold text-sm leading-tight">GTTP</div>
           <div class="text-slate-400 text-xs">v1.0 Prototipo</div>
         </div>
+        <button onclick="closeSidebar()" class="md:hidden text-slate-400 hover:text-white p-1 text-xl leading-none">✕</button>
       </div>
       <div class="mt-3 text-xs text-slate-400 bg-slate-700 rounded-lg px-3 py-2">
         <div class="font-medium text-slate-300">NIT: 899.999.230-7</div>
@@ -64,36 +82,36 @@
     <!-- Nav -->
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
       <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2">Principal</div>
-      <a class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('dashboard')">
+      <a class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('dashboard');closeSidebar()">
         <span class="text-lg">📊</span> Dashboard
       </a>
-      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('calendario')">
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('calendario');closeSidebar()">
         <span class="text-lg">📅</span> Calendario Tributario
         <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">8</span>
       </a>
 
       <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">Gestión</div>
-      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('jurisdicciones')">
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('jurisdicciones');closeSidebar()">
         <span class="text-lg">🗺️</span> Jurisdicciones
       </a>
-      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('liquidacion')">
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('liquidacion');closeSidebar()">
         <span class="text-lg">🧮</span> Liquidación ICA
       </a>
-      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('declaraciones')">
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('declaraciones');closeSidebar()">
         <span class="text-lg">📋</span> Declaraciones
         <span class="ml-auto bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5">3</span>
       </a>
 
       <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">Normativa e IA</div>
-      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('asistente')">
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('asistente');closeSidebar()">
         <span class="text-lg">🤖</span> Asistente Normativo
       </a>
-      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('normativa')">
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('normativa');closeSidebar()">
         <span class="text-lg">📚</span> Base Normativa
       </a>
 
       <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">Control</div>
-      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('auditoria')">
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('auditoria');closeSidebar()">
         <span class="text-lg">🔍</span> Auditoría
       </a>
     </nav>
@@ -111,13 +129,18 @@
   </aside>
 
   <!-- MAIN -->
-  <main class="ml-60 flex-1 min-h-screen">
+  <main class="md:ml-64 flex-1 min-h-screen">
 
     <!-- TOPBAR -->
-    <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
-      <div id="page-title" class="font-semibold text-slate-800">Dashboard</div>
-      <div class="flex items-center gap-4">
-        <div class="text-xs text-slate-500">Periodo: <span class="font-medium text-slate-700">Q1 2026 — Ene/Mar</span></div>
+    <div class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center gap-3">
+        <button onclick="openSidebar()" class="md:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Menú">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div id="page-title" class="font-semibold text-slate-800 text-sm md:text-base">Dashboard</div>
+      </div>
+      <div class="flex items-center gap-2 md:gap-4">
+        <div class="hidden sm:block text-xs text-slate-500">Periodo: <span class="font-medium text-slate-700">Q1 2026 — Ene/Mar</span></div>
         <div class="relative">
           <button class="relative p-2 text-slate-500 hover:text-slate-700" onclick="toggleNotif()">
             🔔
@@ -145,7 +168,7 @@
       </div>
     </div>
 
-    <div class="p-6">
+    <div class="p-3 md:p-6">
 
       <!-- ═══════════════════════════════════════════════ -->
       <!-- MÓDULO 1: DASHBOARD                            -->
@@ -153,17 +176,19 @@
       <div id="mod-dashboard" class="module active">
 
         <!-- Alertas top -->
-        <div class="bg-red-600 text-white rounded-xl p-4 mb-5 flex items-center gap-4">
-          <span class="text-2xl alerta-pulse">⚠️</span>
-          <div class="flex-1">
-            <div class="font-semibold">Alerta de Detrimento Patrimonial</div>
-            <div class="text-red-100 text-sm">7 municipios con descuento por pronto pago expiran <strong>mañana 08/Abr</strong>. Ahorro potencial no aprovechado: <strong>$4,180,000 COP</strong></div>
+        <div class="bg-red-600 text-white rounded-xl p-4 mb-5">
+          <div class="flex items-start gap-3 mb-3">
+            <span class="text-xl alerta-pulse shrink-0">⚠️</span>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold">Alerta de Detrimento Patrimonial</div>
+              <div class="text-red-100 text-sm mt-0.5">7 municipios con descuento por pronto pago expiran <strong>mañana 08/Abr</strong>. Ahorro potencial: <strong>$4,180,000 COP</strong></div>
+            </div>
           </div>
-          <button onclick="showModule('calendario')" class="bg-white text-red-600 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-red-50 shrink-0">Ver Calendario</button>
+          <button onclick="showModule('calendario');closeSidebar()" class="w-full sm:w-auto bg-white text-red-600 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-red-50">Ver Calendario</button>
         </div>
 
         <!-- KPIs -->
-        <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5">
           <div class="card p-5">
             <div class="text-xs text-slate-500 mb-1">Obligaciones Q1 2026</div>
             <div class="text-3xl font-bold text-slate-800 monto-grande">127</div>
@@ -197,9 +222,9 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-5 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
           <!-- Gráfica por tributo -->
-          <div class="card p-5 col-span-2">
+          <div class="card p-5 md:col-span-2">
             <div class="font-semibold text-slate-700 mb-4">Composición Tributaria Q1 2026</div>
             <canvas id="chart-tributos" height="160"></canvas>
           </div>
@@ -216,12 +241,13 @@
         </div>
 
         <!-- Próximos vencimientos -->
-        <div class="card p-5 mb-5">
+        <div class="card p-4 md:p-5 mb-5">
           <div class="flex items-center justify-between mb-4">
-            <div class="font-semibold text-slate-700">Próximos Vencimientos — Semana del 07 al 14 Abr</div>
-            <button onclick="showModule('calendario')" class="text-blue-600 text-sm hover:underline">Ver todos</button>
+            <div class="font-semibold text-slate-700 text-sm md:text-base">Próximos Vencimientos</div>
+            <button onclick="showModule('calendario');closeSidebar()" class="text-blue-600 text-sm hover:underline">Ver todos</button>
           </div>
-          <table class="w-full text-sm">
+          <div class="table-wrap">
+          <table class="w-full text-sm min-w-[480px]">
             <thead>
               <tr class="text-xs text-slate-500 border-b border-slate-100">
                 <th class="text-left pb-2">Municipio</th>
@@ -236,10 +262,11 @@
             <tbody id="tabla-vencimientos">
             </tbody>
           </table>
+          </div>
         </div>
 
         <!-- Mapa de cobertura -->
-        <div class="grid grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="card p-5">
             <div class="font-semibold text-slate-700 mb-3">Cobertura por Departamento</div>
             <div class="space-y-3 text-sm" id="cobertura-deptos"></div>
@@ -257,7 +284,7 @@
       <!-- MÓDULO 2: CALENDARIO TRIBUTARIO               -->
       <!-- ═══════════════════════════════════════════════ -->
       <div id="mod-calendario" class="module">
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <div>
             <div class="font-semibold text-slate-700 text-lg">Calendario Tributario Inteligente</div>
             <div class="text-sm text-slate-500">Obligaciones ordenadas por urgencia y potencial de ahorro</div>
@@ -274,7 +301,7 @@
         </div>
 
         <!-- Leyenda -->
-        <div class="flex gap-3 mb-4 text-xs">
+        <div class="flex flex-wrap gap-2 mb-4 text-xs">
           <span class="badge-rojo px-2 py-1 rounded-full">Vence hoy / atrasado</span>
           <span class="badge-amarillo px-2 py-1 rounded-full">Descuento expira pronto</span>
           <span class="badge-azul px-2 py-1 rounded-full">Próximo (3-7 días)</span>
@@ -282,8 +309,8 @@
           <span class="badge-gris px-2 py-1 rounded-full">Futuro</span>
         </div>
 
-        <div class="card overflow-hidden">
-          <table class="w-full text-sm">
+        <div class="card overflow-hidden table-wrap">
+          <table class="w-full text-sm min-w-[700px]">
             <thead class="bg-slate-50 border-b border-slate-200">
               <tr class="text-xs text-slate-600">
                 <th class="text-left px-4 py-3">Municipio / Depto</th>
@@ -307,7 +334,7 @@
       <!-- MÓDULO 3: JURISDICCIONES                      -->
       <!-- ═══════════════════════════════════════════════ -->
       <div id="mod-jurisdicciones" class="module">
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <div>
             <div class="font-semibold text-slate-700 text-lg">Gestor de Jurisdicciones</div>
             <div class="text-sm text-slate-500">Municipios y departamentos con obligaciones activas</div>
@@ -326,7 +353,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-4 gap-4 mb-5">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5">
           <div class="card p-4 text-center">
             <div class="text-2xl font-bold text-blue-600">50</div>
             <div class="text-xs text-slate-500 mt-1">Municipios activos</div>
@@ -345,8 +372,8 @@
           </div>
         </div>
 
-        <div class="card overflow-hidden">
-          <table class="w-full text-sm">
+        <div class="card overflow-hidden table-wrap">
+          <table class="w-full text-sm min-w-[620px]">
             <thead class="bg-slate-50 border-b border-slate-200">
               <tr class="text-xs text-slate-600">
                 <th class="text-left px-4 py-3">Municipio</th>
@@ -372,9 +399,9 @@
         <div class="font-semibold text-slate-700 text-lg mb-1">Motor de Liquidación — Retención en la Fuente ICA</div>
         <div class="text-sm text-slate-500 mb-5">Calcule retenciones ICA con tarifas vigentes según acuerdo municipal</div>
 
-        <div class="grid grid-cols-5 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
           <!-- Formulario -->
-          <div class="col-span-2 space-y-4">
+          <div class="lg:col-span-2 space-y-4">
             <div class="card p-5">
               <div class="font-medium text-slate-700 mb-4">Datos del Contrato</div>
               <div class="space-y-3">
@@ -433,7 +460,7 @@
           </div>
 
           <!-- Resultado -->
-          <div class="col-span-3 space-y-4">
+          <div class="lg:col-span-3 space-y-4">
             <div class="card p-5" id="liq-resultado">
               <div class="font-medium text-slate-700 mb-4">Resultado de Liquidación</div>
               <div class="text-slate-400 text-sm text-center py-8">
@@ -466,7 +493,7 @@
       <!-- MÓDULO 5: DECLARACIONES                       -->
       <!-- ═══════════════════════════════════════════════ -->
       <div id="mod-declaraciones" class="module">
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <div>
             <div class="font-semibold text-slate-700 text-lg">Declaraciones y Pagos</div>
             <div class="text-sm text-slate-500">Seguimiento del ciclo completo de cada obligación</div>
@@ -487,41 +514,41 @@
         <!-- Flujo de estados -->
         <div class="card p-5 mb-5">
           <div class="font-medium text-slate-700 mb-4">Flujo de Aprobación (4-Ojos)</div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 step-done rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
-              <div class="text-sm font-medium">Liquidación</div>
+          <div class="flex flex-wrap items-center justify-between gap-y-3">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 step-done rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
+              <div class="text-xs md:text-sm font-medium">Liquidación</div>
             </div>
-            <div class="flex-1 h-1 bg-green-400 mx-2"></div>
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 step-done rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
-              <div class="text-sm font-medium">Borrador</div>
+            <div class="flex-1 h-1 bg-green-400 mx-1 hidden sm:block"></div>
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 step-done rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
+              <div class="text-xs md:text-sm font-medium">Borrador</div>
             </div>
-            <div class="flex-1 h-1 bg-green-400 mx-2"></div>
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 step-active rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
-              <div class="text-sm font-medium text-blue-700">Revisión</div>
+            <div class="flex-1 h-1 bg-green-400 mx-1 hidden sm:block"></div>
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 step-active rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
+              <div class="text-xs md:text-sm font-medium text-blue-700">Revisión</div>
             </div>
-            <div class="flex-1 h-1 bg-slate-200 mx-2"></div>
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 step-pending rounded-full flex items-center justify-center text-slate-400 text-sm font-bold">4</div>
-              <div class="text-sm text-slate-400">Aprobación</div>
+            <div class="flex-1 h-1 bg-slate-200 mx-1 hidden sm:block"></div>
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 step-pending rounded-full flex items-center justify-center text-slate-400 text-xs font-bold">4</div>
+              <div class="text-xs md:text-sm text-slate-400">Aprobación</div>
             </div>
-            <div class="flex-1 h-1 bg-slate-200 mx-2"></div>
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 step-pending rounded-full flex items-center justify-center text-slate-400 text-sm font-bold">5</div>
-              <div class="text-sm text-slate-400">Radicación</div>
+            <div class="flex-1 h-1 bg-slate-200 mx-1 hidden sm:block"></div>
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 step-pending rounded-full flex items-center justify-center text-slate-400 text-xs font-bold">5</div>
+              <div class="text-xs md:text-sm text-slate-400">Radicación</div>
             </div>
-            <div class="flex-1 h-1 bg-slate-200 mx-2"></div>
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 step-pending rounded-full flex items-center justify-center text-slate-400 text-sm font-bold">6</div>
+            <div class="flex-1 h-1 bg-slate-200 mx-1 hidden sm:block"></div>
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 step-pending rounded-full flex items-center justify-center text-slate-400 text-xs font-bold">6</div>
               <div class="text-sm text-slate-400">Pago</div>
             </div>
           </div>
         </div>
 
-        <div class="card overflow-hidden">
-          <table class="w-full text-sm">
+        <div class="card overflow-hidden table-wrap">
+          <table class="w-full text-sm min-w-[580px]">
             <thead class="bg-slate-50 border-b border-slate-200">
               <tr class="text-xs text-slate-600">
                 <th class="text-left px-4 py-3">Municipio</th>
@@ -543,7 +570,7 @@
       <!-- MÓDULO 6: ASISTENTE NORMATIVO IA              -->
       <!-- ═══════════════════════════════════════════════ -->
       <div id="mod-asistente" class="module">
-        <div class="grid grid-cols-3 gap-5 h-full">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
           <!-- Panel izquierdo: contexto -->
           <div class="space-y-4">
@@ -612,7 +639,7 @@
           </div>
 
           <!-- Chat -->
-          <div class="col-span-2 card flex flex-col" style="height:70vh">
+          <div class="md:col-span-2 card flex flex-col chat-height" style="height:70vh">
             <div class="p-4 border-b border-slate-100 flex items-center gap-3">
               <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm">AI</div>
               <div>
@@ -649,7 +676,7 @@
       <!-- MÓDULO 7: BASE NORMATIVA                      -->
       <!-- ═══════════════════════════════════════════════ -->
       <div id="mod-normativa" class="module">
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <div>
             <div class="font-semibold text-slate-700 text-lg">Base Normativa</div>
             <div class="text-sm text-slate-500">Repositorio centralizado de acuerdos, ordenanzas y leyes</div>
@@ -678,8 +705,8 @@
           </div>
         </div>
 
-        <div class="card overflow-hidden">
-          <table class="w-full text-sm">
+        <div class="card overflow-hidden table-wrap">
+          <table class="w-full text-sm min-w-[620px]">
             <thead class="bg-slate-50 border-b border-slate-200">
               <tr class="text-xs text-slate-600">
                 <th class="text-left px-4 py-3">Tipo</th>
@@ -704,7 +731,7 @@
         <div class="font-semibold text-slate-700 text-lg mb-1">Módulo de Auditoría e Indicadores</div>
         <div class="text-sm text-slate-500 mb-5">Trazabilidad completa para entes de control</div>
 
-        <div class="grid grid-cols-4 gap-4 mb-5">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5">
           <div class="card p-4">
             <div class="text-xs text-slate-500 mb-1">Cumplimiento global 2026</div>
             <div class="text-3xl font-bold text-green-600">98.4%</div>
@@ -727,7 +754,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-5 mb-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div class="card p-5">
             <div class="font-medium text-slate-700 mb-4">Evolución Cumplimiento (últimos 6 meses)</div>
             <canvas id="chart-auditoria" height="180"></canvas>
@@ -1046,6 +1073,28 @@ function toggleNotif() {
   document.getElementById('notif-panel').classList.toggle('hidden');
 }
 
+function openSidebar() {
+  document.getElementById('sidebar').classList.remove('sidebar-hidden');
+  document.getElementById('sidebar-overlay').classList.add('active');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.add('sidebar-hidden');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+}
+
+// En desktop, siempre mostrar sidebar
+function handleResize() {
+  if (window.innerWidth >= 768) {
+    document.getElementById('sidebar').classList.remove('sidebar-hidden');
+    document.getElementById('sidebar-overlay').classList.remove('active');
+  } else {
+    document.getElementById('sidebar').classList.add('sidebar-hidden');
+  }
+}
+window.addEventListener('resize', handleResize);
+handleResize();
+
 // ═══════════════════════════════════════════════════════════
 // DASHBOARD — INIT
 // ═══════════════════════════════════════════════════════════
@@ -1067,7 +1116,7 @@ function initDashboard() {
       <td class="py-2.5 text-right font-medium monto-grande">${fmt(o.valor)}</td>
       <td class="py-2.5 pl-4">${daysLabel}${descuento}</td>
       <td class="py-2.5">${badgeEstado(o.estado)}</td>
-      <td class="py-2.5"><button onclick="showModule('liquidacion')" class="text-xs text-blue-600 hover:underline">Liquidar</button></td>
+      <td class="py-2.5"><button onclick="showModule('liquidacion');closeSidebar()" class="text-xs text-blue-600 hover:underline">Liquidar</button></td>
     </tr>`;
   }).join('');
 
@@ -1186,7 +1235,7 @@ function renderCalendario(data) {
       <td class="px-4 py-3"><span class="${daysColor}">${daysLabel}</span><div class="text-xs text-slate-400">${o.vto}</div></td>
       <td class="px-4 py-3">${badgeEstado(o.estado)}</td>
       <td class="px-4 py-3">
-        <button onclick="showModule('liquidacion')" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">Liquidar</button>
+        <button onclick="showModule('liquidacion');closeSidebar()" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">Liquidar</button>
       </td>
     </tr>`;
   }).join('');
@@ -1325,7 +1374,7 @@ function calcularLiquidacion() {
       </div>
 
       <div class="flex gap-2">
-        <button class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700" onclick="showModule('declaraciones')">
+        <button class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700" onclick="showModule('declaraciones');closeSidebar()">
           Generar Declaración
         </button>
         <button class="border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-50">
