@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTTP — Gestor Tributario Territorial Público</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
+    .sidebar-link { transition: all 0.15s; }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,0.15); border-left: 3px solid #60a5fa; }
+    .sidebar-link { border-left: 3px solid transparent; }
+    .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .badge-rojo   { background:#fee2e2; color:#dc2626; }
+    .badge-verde  { background:#dcfce7; color:#16a34a; }
+    .badge-amarillo { background:#fef9c3; color:#ca8a04; }
+    .badge-azul   { background:#dbeafe; color:#2563eb; }
+    .badge-gris   { background:#f1f5f9; color:#64748b; }
+    .tab-active   { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+    .tab-inactive { border-bottom: 2px solid transparent; color: #64748b; }
+    .module { display: none; }
+    .module.active { display: block; }
+    .chat-bubble-bot  { background: #f1f5f9; border-radius: 0 12px 12px 12px; }
+    .chat-bubble-user { background: #2563eb; color: white; border-radius: 12px 0 12px 12px; }
+    .progress-bar { height: 6px; border-radius: 3px; background: #e2e8f0; }
+    .progress-fill { height: 6px; border-radius: 3px; }
+    .alerta-pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+    .table-row:hover { background: #f8fafc; }
+    input, select, textarea { outline: none; }
+    .tooltip { position: relative; }
+    .tooltip:hover::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; white-space: nowrap; z-index: 50; }
+    .monto-grande { font-variant-numeric: tabular-nums; }
+    .step-done { background: #22c55e; }
+    .step-active { background: #2563eb; }
+    .step-pending { background: #e2e8f0; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- LAYOUT -->
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-60 bg-slate-800 text-white flex flex-col fixed h-full z-30" id="sidebar">
+    <!-- Logo -->
+    <div class="px-5 py-5 border-b border-slate-700">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">G</div>
+        <div>
+          <div class="font-bold text-sm leading-tight">GTTP</div>
+          <div class="text-slate-400 text-xs">v1.0 Prototipo</div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs text-slate-400 bg-slate-700 rounded-lg px-3 py-2">
+        <div class="font-medium text-slate-300">NIT: 899.999.230-7</div>
+        <div>INVIAS — Dirección Fiscal</div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2">Principal</div>
+      <a class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('dashboard')">
+        <span class="text-lg">📊</span> Dashboard
+      </a>
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('calendario')">
+        <span class="text-lg">📅</span> Calendario Tributario
+        <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">8</span>
+      </a>
+
+      <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">Gestión</div>
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('jurisdicciones')">
+        <span class="text-lg">🗺️</span> Jurisdicciones
+      </a>
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('liquidacion')">
+        <span class="text-lg">🧮</span> Liquidación ICA
+      </a>
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('declaraciones')">
+        <span class="text-lg">📋</span> Declaraciones
+        <span class="ml-auto bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5">3</span>
+      </a>
+
+      <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">Normativa e IA</div>
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('asistente')">
+        <span class="text-lg">🤖</span> Asistente Normativo
+      </a>
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('normativa')">
+        <span class="text-lg">📚</span> Base Normativa
+      </a>
+
+      <div class="text-xs text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">Control</div>
+      <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer" onclick="showModule('auditoria')">
+        <span class="text-lg">🔍</span> Auditoría
+      </a>
+    </nav>
+
+    <!-- User -->
+    <div class="px-4 py-3 border-t border-slate-700">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold">LM</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-medium truncate">Luz Marina Herrera</div>
+          <div class="text-xs text-slate-400">Coordinadora Tributaria</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="ml-60 flex-1 min-h-screen">
+
+    <!-- TOPBAR -->
+    <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
+      <div id="page-title" class="font-semibold text-slate-800">Dashboard</div>
+      <div class="flex items-center gap-4">
+        <div class="text-xs text-slate-500">Periodo: <span class="font-medium text-slate-700">Q1 2026 — Ene/Mar</span></div>
+        <div class="relative">
+          <button class="relative p-2 text-slate-500 hover:text-slate-700" onclick="toggleNotif()">
+            🔔
+            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+          <div id="notif-panel" class="hidden absolute right-0 top-10 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-3">
+            <div class="font-semibold text-sm mb-2">Notificaciones</div>
+            <div class="space-y-2 text-xs">
+              <div class="bg-red-50 border border-red-100 rounded-lg p-2">
+                <div class="font-medium text-red-700">Vence HOY — Bucaramanga ICA</div>
+                <div class="text-red-600">$8,240,000 — Plazo vence a las 5pm</div>
+              </div>
+              <div class="bg-amber-50 border border-amber-100 rounded-lg p-2">
+                <div class="font-medium text-amber-700">Descuento expira mañana — 7 municipios</div>
+                <div class="text-amber-600">Ahorro potencial: $4,180,000</div>
+              </div>
+              <div class="bg-blue-50 border border-blue-100 rounded-lg p-2">
+                <div class="font-medium text-blue-700">Nueva norma cargada — Cali 2026</div>
+                <div class="text-blue-600">Acuerdo 018/2026 — requiere validación</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Sistema OK</div>
+      </div>
+    </div>
+
+    <div class="p-6">
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 1: DASHBOARD                            -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-dashboard" class="module active">
+
+        <!-- Alertas top -->
+        <div class="bg-red-600 text-white rounded-xl p-4 mb-5 flex items-center gap-4">
+          <span class="text-2xl alerta-pulse">⚠️</span>
+          <div class="flex-1">
+            <div class="font-semibold">Alerta de Detrimento Patrimonial</div>
+            <div class="text-red-100 text-sm">7 municipios con descuento por pronto pago expiran <strong>mañana 08/Abr</strong>. Ahorro potencial no aprovechado: <strong>$4,180,000 COP</strong></div>
+          </div>
+          <button onclick="showModule('calendario')" class="bg-white text-red-600 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-red-50 shrink-0">Ver Calendario</button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div class="card p-5">
+            <div class="text-xs text-slate-500 mb-1">Obligaciones Q1 2026</div>
+            <div class="text-3xl font-bold text-slate-800 monto-grande">127</div>
+            <div class="flex items-center gap-1 mt-2 text-xs">
+              <span class="text-green-600 font-medium">89 pagadas</span>
+              <span class="text-slate-300">|</span>
+              <span class="text-amber-600 font-medium">30 en proceso</span>
+              <span class="text-slate-300">|</span>
+              <span class="text-red-600 font-medium">8 críticas</span>
+            </div>
+            <div class="progress-bar mt-2"><div class="progress-fill bg-green-500" style="width:70%"></div></div>
+          </div>
+          <div class="card p-5">
+            <div class="text-xs text-slate-500 mb-1">Total Declarado Q1</div>
+            <div class="text-2xl font-bold text-slate-800 monto-grande">$284.6M</div>
+            <div class="text-xs text-slate-500 mt-1">ICA + Estampillas + Otros</div>
+            <div class="text-xs text-green-600 font-medium mt-2">+12% vs Q1 2025 (mayor contratación)</div>
+          </div>
+          <div class="card p-5">
+            <div class="text-xs text-slate-500 mb-1">Ahorro Pronto Pago</div>
+            <div class="text-2xl font-bold text-green-600 monto-grande">$18.4M</div>
+            <div class="text-xs text-slate-500 mt-1">Descuentos aprovechados en Q1</div>
+            <div class="text-xs text-slate-400 mt-2">Meta trimestral: $20M</div>
+            <div class="progress-bar mt-1"><div class="progress-fill bg-green-500" style="width:92%"></div></div>
+          </div>
+          <div class="card p-5 border-l-4 border-red-400">
+            <div class="text-xs text-slate-500 mb-1">Sanciones e Intereses</div>
+            <div class="text-2xl font-bold text-red-600 monto-grande">$0</div>
+            <div class="text-xs text-slate-500 mt-1">Sin sanciones en el período</div>
+            <div class="text-xs text-green-600 font-medium mt-2">100% cumplimiento a tiempo</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-5 mb-6">
+          <!-- Gráfica por tributo -->
+          <div class="card p-5 col-span-2">
+            <div class="font-semibold text-slate-700 mb-4">Composición Tributaria Q1 2026</div>
+            <canvas id="chart-tributos" height="160"></canvas>
+          </div>
+          <!-- Estado de cumplimiento -->
+          <div class="card p-5">
+            <div class="font-semibold text-slate-700 mb-4">Estado de Cumplimiento</div>
+            <canvas id="chart-cumplimiento" height="160"></canvas>
+            <div class="mt-3 space-y-2 text-xs">
+              <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded-sm inline-block"></span>Pagadas</span><span class="font-semibold">89 (70%)</span></div>
+              <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-500 rounded-sm inline-block"></span>En proceso</span><span class="font-semibold">30 (24%)</span></div>
+              <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded-sm inline-block"></span>Críticas</span><span class="font-semibold">8 (6%)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Próximos vencimientos -->
+        <div class="card p-5 mb-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="font-semibold text-slate-700">Próximos Vencimientos — Semana del 07 al 14 Abr</div>
+            <button onclick="showModule('calendario')" class="text-blue-600 text-sm hover:underline">Ver todos</button>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-slate-500 border-b border-slate-100">
+                <th class="text-left pb-2">Municipio</th>
+                <th class="text-left pb-2">Tributo</th>
+                <th class="text-left pb-2">Período</th>
+                <th class="text-right pb-2">Valor</th>
+                <th class="text-left pb-2 pl-4">Vencimiento</th>
+                <th class="text-left pb-2">Estado</th>
+                <th class="text-left pb-2">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-vencimientos">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mapa de cobertura -->
+        <div class="grid grid-cols-2 gap-5">
+          <div class="card p-5">
+            <div class="font-semibold text-slate-700 mb-3">Cobertura por Departamento</div>
+            <div class="space-y-3 text-sm" id="cobertura-deptos"></div>
+          </div>
+          <div class="card p-5">
+            <div class="font-semibold text-slate-700 mb-3">Actividad Reciente</div>
+            <div class="space-y-2 text-sm" id="actividad-reciente"></div>
+          </div>
+        </div>
+
+      </div><!-- /dashboard -->
+
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 2: CALENDARIO TRIBUTARIO               -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-calendario" class="module">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <div class="font-semibold text-slate-700 text-lg">Calendario Tributario Inteligente</div>
+            <div class="text-sm text-slate-500">Obligaciones ordenadas por urgencia y potencial de ahorro</div>
+          </div>
+          <div class="flex gap-2">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm" onchange="filtrarCalendario(this.value)">
+              <option value="todos">Todos los tributos</option>
+              <option value="ICA">ICA / Reteica</option>
+              <option value="Predial">Predial</option>
+              <option value="Estampilla">Estampillas</option>
+            </select>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">Exportar Excel</button>
+          </div>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="flex gap-3 mb-4 text-xs">
+          <span class="badge-rojo px-2 py-1 rounded-full">Vence hoy / atrasado</span>
+          <span class="badge-amarillo px-2 py-1 rounded-full">Descuento expira pronto</span>
+          <span class="badge-azul px-2 py-1 rounded-full">Próximo (3-7 días)</span>
+          <span class="badge-verde px-2 py-1 rounded-full">Completado</span>
+          <span class="badge-gris px-2 py-1 rounded-full">Futuro</span>
+        </div>
+
+        <div class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+              <tr class="text-xs text-slate-600">
+                <th class="text-left px-4 py-3">Municipio / Depto</th>
+                <th class="text-left px-4 py-3">Tributo</th>
+                <th class="text-left px-4 py-3">Período</th>
+                <th class="text-right px-4 py-3">Base Gravable</th>
+                <th class="text-right px-4 py-3">Valor</th>
+                <th class="text-left px-4 py-3">Descuento</th>
+                <th class="text-left px-4 py-3">Vencimiento</th>
+                <th class="text-left px-4 py-3">Estado</th>
+                <th class="text-left px-4 py-3">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-calendario"></tbody>
+          </table>
+        </div>
+      </div><!-- /calendario -->
+
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 3: JURISDICCIONES                      -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-jurisdicciones" class="module">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <div class="font-semibold text-slate-700 text-lg">Gestor de Jurisdicciones</div>
+            <div class="text-sm text-slate-500">Municipios y departamentos con obligaciones activas</div>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" placeholder="Buscar municipio..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm w-52" oninput="buscarMunicipio(this.value)">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm" onchange="filtrarCategoria(this.value)">
+              <option value="">Todas las categorías</option>
+              <option value="1">Categoría 1</option>
+              <option value="2">Categoría 2</option>
+              <option value="3">Categoría 3</option>
+              <option value="4">Categoría 4</option>
+              <option value="5">Categoría 5</option>
+              <option value="6">Categoría 6</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-4 mb-5">
+          <div class="card p-4 text-center">
+            <div class="text-2xl font-bold text-blue-600">50</div>
+            <div class="text-xs text-slate-500 mt-1">Municipios activos</div>
+          </div>
+          <div class="card p-4 text-center">
+            <div class="text-2xl font-bold text-green-600">38</div>
+            <div class="text-xs text-slate-500 mt-1">Norma vigente (&lt;1 año)</div>
+          </div>
+          <div class="card p-4 text-center">
+            <div class="text-2xl font-bold text-amber-600">9</div>
+            <div class="text-xs text-slate-500 mt-1">Norma en revisión</div>
+          </div>
+          <div class="card p-4 text-center">
+            <div class="text-2xl font-bold text-red-600">3</div>
+            <div class="text-xs text-slate-500 mt-1">Norma desactualizada</div>
+          </div>
+        </div>
+
+        <div class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+              <tr class="text-xs text-slate-600">
+                <th class="text-left px-4 py-3">Municipio</th>
+                <th class="text-left px-4 py-3">Depto</th>
+                <th class="text-center px-4 py-3">Cat.</th>
+                <th class="text-left px-4 py-3">Tributos activos</th>
+                <th class="text-left px-4 py-3">Tarifa ICA</th>
+                <th class="text-left px-4 py-3">Norma vigente</th>
+                <th class="text-left px-4 py-3">Estado</th>
+                <th class="text-left px-4 py-3">Portal</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-jurisdicciones"></tbody>
+          </table>
+        </div>
+      </div><!-- /jurisdicciones -->
+
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 4: LIQUIDACIÓN ICA                     -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-liquidacion" class="module">
+        <div class="font-semibold text-slate-700 text-lg mb-1">Motor de Liquidación — Retención en la Fuente ICA</div>
+        <div class="text-sm text-slate-500 mb-5">Calcule retenciones ICA con tarifas vigentes según acuerdo municipal</div>
+
+        <div class="grid grid-cols-5 gap-5">
+          <!-- Formulario -->
+          <div class="col-span-2 space-y-4">
+            <div class="card p-5">
+              <div class="font-medium text-slate-700 mb-4">Datos del Contrato</div>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs text-slate-500 block mb-1">Municipio de ejecución</label>
+                  <select id="liq-municipio" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm" onchange="actualizarTarifa()">
+                    <option value="">-- Seleccionar municipio --</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 block mb-1">Número de contrato</label>
+                  <input type="text" id="liq-contrato" placeholder="Ej: 2026-INV-0142" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 block mb-1">Actividad económica (CIIU)</label>
+                  <select id="liq-ciiu" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm" onchange="actualizarTarifa()">
+                    <option value="4111">4111 — Construcción de edificios residenciales</option>
+                    <option value="4290">4290 — Otras obras de ingeniería civil</option>
+                    <option value="7020">7020 — Consultoría de gestión empresarial</option>
+                    <option value="7112">7112 — Actividades de ingeniería</option>
+                    <option value="6201">6201 — Desarrollo de software</option>
+                    <option value="4941">4941 — Transporte de carga por carretera</option>
+                    <option value="4511">4511 — Comercio de vehículos</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 block mb-1">Período gravable</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <select id="liq-periodo" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm">
+                      <option value="ENE">Enero</option>
+                      <option value="FEB">Febrero</option>
+                      <option value="MAR" selected>Marzo</option>
+                      <option value="ABR">Abril</option>
+                    </select>
+                    <select id="liq-anio" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm">
+                      <option value="2026" selected>2026</option>
+                      <option value="2025">2025</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 block mb-1">Valor del pago / factura</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-slate-500 text-sm">$</span>
+                    <input type="number" id="liq-valor" placeholder="0" class="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2.5 text-sm" oninput="calcularLiquidacion()" />
+                  </div>
+                </div>
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs" id="liq-norma-info">
+                  <div class="font-medium text-blue-700">Seleccione un municipio para ver la norma aplicable</div>
+                </div>
+              </div>
+              <button onclick="calcularLiquidacion()" class="w-full mt-4 bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700">
+                Calcular Retención
+              </button>
+            </div>
+          </div>
+
+          <!-- Resultado -->
+          <div class="col-span-3 space-y-4">
+            <div class="card p-5" id="liq-resultado">
+              <div class="font-medium text-slate-700 mb-4">Resultado de Liquidación</div>
+              <div class="text-slate-400 text-sm text-center py-8">
+                Complete el formulario y presione "Calcular" para ver el resultado detallado con trazabilidad normativa completa.
+              </div>
+            </div>
+
+            <!-- Histórico de liquidaciones -->
+            <div class="card p-5">
+              <div class="font-medium text-slate-700 mb-3">Liquidaciones Recientes</div>
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="text-slate-500 border-b border-slate-100">
+                    <th class="text-left pb-2">Municipio</th>
+                    <th class="text-left pb-2">Contrato</th>
+                    <th class="text-right pb-2">Base</th>
+                    <th class="text-right pb-2">Retención</th>
+                    <th class="text-left pb-2 pl-3">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-liquidaciones-recientes"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- /liquidacion -->
+
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 5: DECLARACIONES                       -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-declaraciones" class="module">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <div class="font-semibold text-slate-700 text-lg">Declaraciones y Pagos</div>
+            <div class="text-sm text-slate-500">Seguimiento del ciclo completo de cada obligación</div>
+          </div>
+          <div class="flex gap-2">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <option>Todos los estados</option>
+              <option>Borrador</option>
+              <option>En revisión</option>
+              <option>Aprobada</option>
+              <option>Radicada</option>
+              <option>Pagada</option>
+            </select>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Nueva Declaración</button>
+          </div>
+        </div>
+
+        <!-- Flujo de estados -->
+        <div class="card p-5 mb-5">
+          <div class="font-medium text-slate-700 mb-4">Flujo de Aprobación (4-Ojos)</div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 step-done rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
+              <div class="text-sm font-medium">Liquidación</div>
+            </div>
+            <div class="flex-1 h-1 bg-green-400 mx-2"></div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 step-done rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
+              <div class="text-sm font-medium">Borrador</div>
+            </div>
+            <div class="flex-1 h-1 bg-green-400 mx-2"></div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 step-active rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
+              <div class="text-sm font-medium text-blue-700">Revisión</div>
+            </div>
+            <div class="flex-1 h-1 bg-slate-200 mx-2"></div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 step-pending rounded-full flex items-center justify-center text-slate-400 text-sm font-bold">4</div>
+              <div class="text-sm text-slate-400">Aprobación</div>
+            </div>
+            <div class="flex-1 h-1 bg-slate-200 mx-2"></div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 step-pending rounded-full flex items-center justify-center text-slate-400 text-sm font-bold">5</div>
+              <div class="text-sm text-slate-400">Radicación</div>
+            </div>
+            <div class="flex-1 h-1 bg-slate-200 mx-2"></div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 step-pending rounded-full flex items-center justify-center text-slate-400 text-sm font-bold">6</div>
+              <div class="text-sm text-slate-400">Pago</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+              <tr class="text-xs text-slate-600">
+                <th class="text-left px-4 py-3">Municipio</th>
+                <th class="text-left px-4 py-3">Tributo / Período</th>
+                <th class="text-right px-4 py-3">Valor</th>
+                <th class="text-left px-4 py-3">Vencimiento</th>
+                <th class="text-left px-4 py-3">Estado</th>
+                <th class="text-left px-4 py-3">Elaborado por</th>
+                <th class="text-left px-4 py-3">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-declaraciones"></tbody>
+          </table>
+        </div>
+      </div><!-- /declaraciones -->
+
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 6: ASISTENTE NORMATIVO IA              -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-asistente" class="module">
+        <div class="grid grid-cols-3 gap-5 h-full">
+
+          <!-- Panel izquierdo: contexto -->
+          <div class="space-y-4">
+            <div class="card p-4">
+              <div class="font-medium text-slate-700 mb-3">Contexto de Consulta</div>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs text-slate-500 block mb-1">Municipio de referencia</label>
+                  <select id="ai-municipio" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                    <option value="">General (nacional)</option>
+                    <option value="bogota">Bogotá D.C.</option>
+                    <option value="medellin">Medellín</option>
+                    <option value="cali">Cali</option>
+                    <option value="barranquilla">Barranquilla</option>
+                    <option value="bucaramanga">Bucaramanga</option>
+                    <option value="cartagena">Cartagena</option>
+                    <option value="pereira">Pereira</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500 block mb-1">Tipo de tributo</label>
+                  <select id="ai-tributo" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                    <option value="">Todos</option>
+                    <option value="ica">ICA / Reteica</option>
+                    <option value="predial">Predial</option>
+                    <option value="estampilla">Estampillas</option>
+                    <option value="vehiculos">Vehículos</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="card p-4">
+              <div class="font-medium text-slate-700 mb-3">Preguntas Frecuentes</div>
+              <div class="space-y-2">
+                <button class="w-full text-left text-xs bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2.5 transition-colors" onclick="preguntaRapida(0)">
+                  ¿Los contratos interadministrativos están gravados con ICA?
+                </button>
+                <button class="w-full text-left text-xs bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2.5 transition-colors" onclick="preguntaRapida(1)">
+                  ¿Cuál es la tarifa de Reteica para consultoría en Bogotá?
+                </button>
+                <button class="w-full text-left text-xs bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2.5 transition-colors" onclick="preguntaRapida(2)">
+                  ¿Las entidades de derecho público son sujetos pasivos del predial?
+                </button>
+                <button class="w-full text-left text-xs bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2.5 transition-colors" onclick="preguntaRapida(3)">
+                  ¿Qué pasa si no se declara ICA en la fecha límite?
+                </button>
+                <button class="w-full text-left text-xs bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2.5 transition-colors" onclick="preguntaRapida(4)">
+                  ¿Dónde se radica la estampilla departamental?
+                </button>
+              </div>
+            </div>
+
+            <div class="card p-4">
+              <div class="font-medium text-slate-700 mb-3">Base Normativa Indexada</div>
+              <div class="text-xs text-slate-500 space-y-1.5">
+                <div class="flex justify-between"><span>Acuerdos municipales</span><span class="font-medium text-slate-700">1,240</span></div>
+                <div class="flex justify-between"><span>Ordenanzas dept.</span><span class="font-medium text-slate-700">142</span></div>
+                <div class="flex justify-between"><span>Leyes nacionales</span><span class="font-medium text-slate-700">47</span></div>
+                <div class="flex justify-between"><span>Conceptos DIAN</span><span class="font-medium text-slate-700">324</span></div>
+                <div class="flex justify-between"><span>Sentencias C. Estado</span><span class="font-medium text-slate-700">89</span></div>
+                <div class="border-t border-slate-100 pt-1.5 flex justify-between font-medium"><span>Total documentos</span><span class="text-blue-600">1,842</span></div>
+              </div>
+              <div class="mt-2 text-xs text-green-600">Última actualización: hace 2 horas</div>
+            </div>
+          </div>
+
+          <!-- Chat -->
+          <div class="col-span-2 card flex flex-col" style="height:70vh">
+            <div class="p-4 border-b border-slate-100 flex items-center gap-3">
+              <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm">AI</div>
+              <div>
+                <div class="font-medium text-sm">Asistente Normativo GTTP</div>
+                <div class="text-xs text-green-600">Activo — Base normativa vigente</div>
+              </div>
+              <div class="ml-auto text-xs text-slate-400">Solo responde con fuentes verificadas</div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chat-messages">
+              <!-- Mensaje inicial -->
+              <div class="flex gap-3">
+                <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs shrink-0">AI</div>
+                <div class="chat-bubble-bot px-4 py-3 text-sm max-w-lg">
+                  <p>Hola, soy el <strong>Asistente Normativo del GTTP</strong>. Puedo responder preguntas sobre tributos territoriales en Colombia con base exclusivamente en la normativa indexada en el sistema.</p>
+                  <p class="mt-2 text-xs text-slate-500">Mis respuestas siempre citan la fuente exacta (norma, artículo y municipio). Si una pregunta supera el alcance de la base normativa, lo indico claramente.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100">
+              <div class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="Ej: ¿Cuál es la tarifa de ICA para contratos de obra en Medellín?" class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm" onkeydown="if(event.key==='Enter') enviarMensaje()" />
+                <button onclick="enviarMensaje()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700">Enviar</button>
+              </div>
+              <div class="text-xs text-slate-400 mt-2 text-center">Las respuestas se basan únicamente en la normativa indexada. No reemplazan asesoría jurídica especializada.</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /asistente -->
+
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 7: BASE NORMATIVA                      -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-normativa" class="module">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <div class="font-semibold text-slate-700 text-lg">Base Normativa</div>
+            <div class="text-sm text-slate-500">Repositorio centralizado de acuerdos, ordenanzas y leyes</div>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" placeholder="Buscar en normativa..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm w-64" />
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Cargar Norma</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mb-5">
+          <div class="card p-4">
+            <div class="text-xs text-slate-500 mb-1">Total documentos indexados</div>
+            <div class="text-2xl font-bold text-blue-600">1,842</div>
+            <div class="text-xs text-green-600 mt-1">+24 este mes</div>
+          </div>
+          <div class="card p-4">
+            <div class="text-xs text-slate-500 mb-1">Municipios con norma vigente</div>
+            <div class="text-2xl font-bold text-green-600">38/50</div>
+            <div class="progress-bar mt-2"><div class="progress-fill bg-green-500" style="width:76%"></div></div>
+          </div>
+          <div class="card p-4">
+            <div class="text-xs text-slate-500 mb-1">Pendientes validación humana</div>
+            <div class="text-2xl font-bold text-amber-600">7</div>
+            <div class="text-xs text-amber-600 mt-1">Requieren revisión del especialista</div>
+          </div>
+        </div>
+
+        <div class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+              <tr class="text-xs text-slate-600">
+                <th class="text-left px-4 py-3">Tipo</th>
+                <th class="text-left px-4 py-3">Identificación</th>
+                <th class="text-left px-4 py-3">Jurisdicción</th>
+                <th class="text-left px-4 py-3">Fecha</th>
+                <th class="text-left px-4 py-3">Tema</th>
+                <th class="text-left px-4 py-3">Estado</th>
+                <th class="text-left px-4 py-3">Fuente</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-normativa"></tbody>
+          </table>
+        </div>
+      </div><!-- /normativa -->
+
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MÓDULO 8: AUDITORÍA                           -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <div id="mod-auditoria" class="module">
+        <div class="font-semibold text-slate-700 text-lg mb-1">Módulo de Auditoría e Indicadores</div>
+        <div class="text-sm text-slate-500 mb-5">Trazabilidad completa para entes de control</div>
+
+        <div class="grid grid-cols-4 gap-4 mb-5">
+          <div class="card p-4">
+            <div class="text-xs text-slate-500 mb-1">Cumplimiento global 2026</div>
+            <div class="text-3xl font-bold text-green-600">98.4%</div>
+            <div class="text-xs text-slate-500 mt-1">126/127 obligaciones a tiempo</div>
+          </div>
+          <div class="card p-4">
+            <div class="text-xs text-slate-500 mb-1">Riesgo de detrimento</div>
+            <div class="text-3xl font-bold text-amber-600">$4.2M</div>
+            <div class="text-xs text-amber-600 mt-1">Descuentos en riesgo (hoy)</div>
+          </div>
+          <div class="card p-4">
+            <div class="text-xs text-slate-500 mb-1">Tiempo prom. declaración</div>
+            <div class="text-3xl font-bold text-blue-600">14 min</div>
+            <div class="text-xs text-slate-500 mt-1">Por municipio con GTTP</div>
+          </div>
+          <div class="card p-4">
+            <div class="text-xs text-slate-500 mb-1">Sanciones evitadas (2026)</div>
+            <div class="text-3xl font-bold text-green-600">$0</div>
+            <div class="text-xs text-green-600 mt-1">0 extemporaneas en el periodo</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-5 mb-5">
+          <div class="card p-5">
+            <div class="font-medium text-slate-700 mb-4">Evolución Cumplimiento (últimos 6 meses)</div>
+            <canvas id="chart-auditoria" height="180"></canvas>
+          </div>
+          <div class="card p-5">
+            <div class="font-medium text-slate-700 mb-3">Log de Actividades Recientes</div>
+            <div class="space-y-2 text-xs" id="log-auditoria"></div>
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="font-medium text-slate-700">Reporte de Cumplimiento para Entes de Control</div>
+            <div class="flex gap-2">
+              <button class="border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-medium hover:bg-slate-50">Exportar PDF</button>
+              <button class="border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-medium hover:bg-slate-50">Exportar Excel</button>
+              <button class="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium">Enviar a Control Interno</button>
+            </div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 text-xs text-slate-600 space-y-2">
+            <div class="font-medium text-slate-700">INFORME TRIMESTRAL — Q1 2026</div>
+            <div class="grid grid-cols-3 gap-4">
+              <div><div class="text-slate-500">Entidad</div><div class="font-medium">INVIAS</div></div>
+              <div><div class="text-slate-500">NIT</div><div class="font-medium">899.999.230-7</div></div>
+              <div><div class="text-slate-500">Periodo</div><div class="font-medium">Ene – Mar 2026</div></div>
+              <div><div class="text-slate-500">Total obligaciones</div><div class="font-medium">127</div></div>
+              <div><div class="text-slate-500">Total declarado</div><div class="font-medium">$284,620,000</div></div>
+              <div><div class="text-slate-500">Sanciones</div><div class="font-medium text-green-600">$0</div></div>
+            </div>
+            <div class="border-t border-slate-200 pt-2 text-slate-500">
+              Elaborado por: Sistema GTTP v1.0 | Revisado por: Luz Marina Herrera — Coordinadora Tributaria |
+              Fecha de corte: 07/04/2026 | Firmado electrónicamente.
+            </div>
+          </div>
+        </div>
+      </div><!-- /auditoria -->
+
+    </div><!-- /p-6 -->
+  </main>
+</div><!-- /flex -->
+
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATOS DE PRUEBA
+// ═══════════════════════════════════════════════════════════
+
+const MUNICIPIOS = [
+  { id:'bogota',      nombre:'Bogotá D.C.',     depto:'Cundinamarca', cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 820/2021', norma_fecha:'2021-12-15', portal:true,  tributos:['ICA','Predial','Vehículos','Reteica'], estado:'vigente' },
+  { id:'medellin',    nombre:'Medellín',         depto:'Antioquia',    cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 76/2023',  norma_fecha:'2023-08-10', portal:true,  tributos:['ICA','Predial','Estampilla','Reteica'], estado:'vigente' },
+  { id:'cali',        nombre:'Cali',             depto:'Valle Cauca',  cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 530/2024', norma_fecha:'2024-02-20', portal:true,  tributos:['ICA','Predial','Vehículos','Reteica'], estado:'vigente' },
+  { id:'barranquilla',nombre:'Barranquilla',     depto:'Atlántico',    cat:1, tarifa:0.005,  tarifa_min:0.003, norma:'Decreto 0621/2022',norma_fecha:'2022-11-05', portal:true,  tributos:['ICA','Predial','Reteica'], estado:'vigente' },
+  { id:'bucaramanga', nombre:'Bucaramanga',      depto:'Santander',    cat:1, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 019/2023', norma_fecha:'2023-06-15', portal:true,  tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
+  { id:'cartagena',   nombre:'Cartagena',        depto:'Bolívar',      cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Decreto 1250/2023',norma_fecha:'2023-09-01', portal:true,  tributos:['ICA','Predial','Reteica'], estado:'vigente' },
+  { id:'cucuta',      nombre:'Cúcuta',           depto:'N. Santander', cat:1, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 034/2022', norma_fecha:'2022-07-20', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'pereira',     nombre:'Pereira',          depto:'Risaralda',    cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 012/2024', norma_fecha:'2024-03-10', portal:true,  tributos:['ICA','Predial','Estampilla','Reteica'], estado:'vigente' },
+  { id:'manizales',   nombre:'Manizales',        depto:'Caldas',       cat:2, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 815/2023', norma_fecha:'2023-11-22', portal:true,  tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
+  { id:'ibague',      nombre:'Ibagué',           depto:'Tolima',       cat:2, tarifa:0.0045, tarifa_min:0.002, norma:'Acuerdo 028/2022', norma_fecha:'2022-10-05', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'villavicencio',nombre:'Villavicencio',   depto:'Meta',         cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 014/2023', norma_fecha:'2023-04-18', portal:false, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
+  { id:'neiva',       nombre:'Neiva',            depto:'Huila',        cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 021/2021', norma_fecha:'2021-08-30', portal:false, tributos:['ICA','Predial'], estado:'alerta' },
+  { id:'armenia',     nombre:'Armenia',          depto:'Quindío',      cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 018/2023', norma_fecha:'2023-07-14', portal:true,  tributos:['ICA','Predial','Reteica'], estado:'vigente' },
+  { id:'monteria',    nombre:'Montería',         depto:'Córdoba',      cat:2, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 031/2022', norma_fecha:'2022-12-01', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'sincelejo',   nombre:'Sincelejo',        depto:'Sucre',        cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 009/2021', norma_fecha:'2021-06-15', portal:false, tributos:['ICA','Predial'], estado:'alerta' },
+  { id:'valledupar',  nombre:'Valledupar',       depto:'Cesar',        cat:2, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 016/2024', norma_fecha:'2024-01-20', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'pasto',       nombre:'Pasto',            depto:'Nariño',       cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 042/2023', norma_fecha:'2023-09-08', portal:false, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
+  { id:'tunja',       nombre:'Tunja',            depto:'Boyacá',       cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 025/2022', norma_fecha:'2022-11-20', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'popayan',     nombre:'Popayán',          depto:'Cauca',        cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 030/2022', norma_fecha:'2022-08-10', portal:false, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
+  { id:'florencia',   nombre:'Florencia',        depto:'Caquetá',      cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 007/2020', norma_fecha:'2020-10-05', portal:false, tributos:['ICA','Predial'], estado:'critico' },
+  { id:'riohacha',    nombre:'Riohacha',         depto:'La Guajira',   cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 011/2021', norma_fecha:'2021-11-30', portal:false, tributos:['ICA','Predial'], estado:'alerta' },
+  { id:'quibdo',      nombre:'Quibdó',           depto:'Chocó',        cat:4, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 003/2019', norma_fecha:'2019-08-20', portal:false, tributos:['ICA','Predial'], estado:'critico' },
+  { id:'arauca',      nombre:'Arauca',           depto:'Arauca',       cat:4, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 008/2022', norma_fecha:'2022-05-15', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'yopal',       nombre:'Yopal',            depto:'Casanare',     cat:4, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 015/2023', norma_fecha:'2023-03-22', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'mitú',        nombre:'Mitú',             depto:'Vaupés',       cat:5, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 001/2018', norma_fecha:'2018-04-10', portal:false, tributos:['ICA','Predial'], estado:'critico' },
+];
+
+const CIIU_TARIFAS = {
+  '4111': { nombre: 'Construcción edificios', tarifa_mod: 1.0 },
+  '4290': { nombre: 'Obras ingeniería civil', tarifa_mod: 1.0 },
+  '7020': { nombre: 'Consultoría gestión',    tarifa_mod: 0.8 },
+  '7112': { nombre: 'Actividades ingeniería', tarifa_mod: 0.9 },
+  '6201': { nombre: 'Desarrollo software',    tarifa_mod: 0.9 },
+  '4941': { nombre: 'Transporte de carga',    tarifa_mod: 1.1 },
+  '4511': { nombre: 'Comercio vehículos',     tarifa_mod: 1.0 },
+};
+
+const OBLIGACIONES = [
+  { mun:'Bogotá D.C.',     tributo:'Reteica', periodo:'Mar 2026', base:450000000,  valor:2250000,  vto:'2026-04-07', descuento_vto:null,      descuento_pct:0,   estado:'critico',    pagado:false },
+  { mun:'Medellín',        tributo:'Reteica', periodo:'Mar 2026', base:320000000,  valor:1600000,  vto:'2026-04-10', descuento_vto:'2026-04-08', descuento_pct:10,  estado:'descuento',  pagado:false },
+  { mun:'Cali',            tributo:'Reteica', periodo:'Mar 2026', base:280000000,  valor:1400000,  vto:'2026-04-11', descuento_vto:'2026-04-08', descuento_pct:10,  estado:'descuento',  pagado:false },
+  { mun:'Barranquilla',    tributo:'Reteica', periodo:'Mar 2026', base:195000000,  valor:975000,   vto:'2026-04-10', descuento_vto:'2026-04-08', descuento_pct:5,   estado:'descuento',  pagado:false },
+  { mun:'Bucaramanga',     tributo:'ICA',     periodo:'Q1 2026',  base:2060000000, valor:8240000,  vto:'2026-04-07', descuento_vto:null,      descuento_pct:0,   estado:'critico',    pagado:false },
+  { mun:'Cartagena',       tributo:'Reteica', periodo:'Mar 2026', base:167000000,  valor:835000,   vto:'2026-04-14', descuento_vto:'2026-04-09', descuento_pct:8,   estado:'descuento',  pagado:false },
+  { mun:'Pereira',         tributo:'Reteica', periodo:'Mar 2026', base:134000000,  valor:670000,   vto:'2026-04-11', descuento_vto:'2026-04-08', descuento_pct:10,  estado:'descuento',  pagado:false },
+  { mun:'Manizales',       tributo:'Reteica', periodo:'Mar 2026', base:98000000,   valor:392000,   vto:'2026-04-14', descuento_vto:'2026-04-08', descuento_pct:10,  estado:'descuento',  pagado:false },
+  { mun:'Ibagué',          tributo:'Reteica', periodo:'Mar 2026', base:85000000,   valor:382500,   vto:'2026-04-15', descuento_vto:null,      descuento_pct:0,   estado:'proximo',    pagado:false },
+  { mun:'Villavicencio',   tributo:'Reteica', periodo:'Mar 2026', base:76000000,   valor:380000,   vto:'2026-04-16', descuento_vto:null,      descuento_pct:0,   estado:'proximo',    pagado:false },
+  { mun:'Neiva',           tributo:'ICA',     periodo:'Q1 2026',  base:540000000,  valor:2430000,  vto:'2026-04-18', descuento_vto:null,      descuento_pct:0,   estado:'futuro',     pagado:false },
+  { mun:'Cúcuta',          tributo:'Reteica', periodo:'Mar 2026', base:67000000,   valor:268000,   vto:'2026-04-14', descuento_vto:null,      descuento_pct:0,   estado:'proximo',    pagado:false },
+  { mun:'Armenia',         tributo:'Reteica', periodo:'Mar 2026', base:58000000,   valor:290000,   vto:'2026-04-15', descuento_vto:null,      descuento_pct:0,   estado:'proximo',    pagado:false },
+  // Pagadas
+  { mun:'Bogotá D.C.',     tributo:'ICA',     periodo:'Q4 2025',  base:1800000000, valor:9000000,  vto:'2026-01-20', descuento_vto:null,      descuento_pct:0,   estado:'pagado',     pagado:true },
+  { mun:'Medellín',        tributo:'ICA',     periodo:'Q4 2025',  base:1400000000, valor:7000000,  vto:'2026-01-22', descuento_vto:null,      descuento_pct:0,   estado:'pagado',     pagado:true },
+  { mun:'Cali',            tributo:'ICA',     periodo:'Q4 2025',  base:1200000000, valor:6000000,  vto:'2026-01-22', descuento_vto:null,      descuento_pct:0,   estado:'pagado',     pagado:true },
+];
+
+const NORMATIVA = [
+  { tipo:'Acuerdo Municipal',    id:'Acuerdo 820/2021',   juris:'Bogotá D.C.',  fecha:'2021-12-15', tema:'Estatuto Tributario',    estado:'Vigente', fuente:'Registro Distrital' },
+  { tipo:'Acuerdo Municipal',    id:'Acuerdo 076/2023',   juris:'Medellín',     fecha:'2023-08-10', tema:'Tarifas ICA 2023-2027',  estado:'Vigente', fuente:'Gaceta Oficial' },
+  { tipo:'Acuerdo Municipal',    id:'Acuerdo 530/2024',   juris:'Cali',         fecha:'2024-02-20', tema:'Reforma tributaria',     estado:'Vigente', fuente:'Gaceta Municipal' },
+  { tipo:'Ley Nacional',         id:'Ley 14/1983',        juris:'Nacional',     fecha:'1983-07-06', tema:'ICA - Marco general',    estado:'Vigente', fuente:'Diario Oficial' },
+  { tipo:'Decreto Nacional',     id:'Decreto 1333/1986',  juris:'Nacional',     fecha:'1986-04-25', tema:'Código Régimen Municipal',estado:'Vigente', fuente:'Diario Oficial' },
+  { tipo:'Sentencia',            id:'C-220/1996',         juris:'Corte Const.', fecha:'1996-05-14', tema:'ICA en contratos Estado', estado:'Vigente', fuente:'Corte Constitucional' },
+  { tipo:'Concepto DIAN',        id:'Concepto 1556/2022', juris:'Nacional',     fecha:'2022-09-30', tema:'Reteica - base de cálculo',estado:'Vigente',fuente:'DIAN' },
+  { tipo:'Ordenanza',            id:'Ordenanza 015/2023', juris:'Antioquia',    fecha:'2023-05-20', tema:'Estampilla Pro-UN',       estado:'Vigente', fuente:'Asamblea Dpto.' },
+  { tipo:'Acuerdo Municipal',    id:'Acuerdo 019/2023',   juris:'Bucaramanga',  fecha:'2023-06-15', tema:'Tarifas tributarias 2024',estado:'Vigente', fuente:'Gaceta Municipal' },
+  { tipo:'Acuerdo Municipal',    id:'Acuerdo 007/2020',   juris:'Florencia',    fecha:'2020-10-05', tema:'Estatuto Tributario',    estado:'ALERTA: >3 años', fuente:'Archivo municipal' },
+];
+
+const DECLARACIONES_DATA = [
+  { mun:'Bogotá D.C.',   tributo:'Reteica Mar/2026',   valor:2250000,  vto:'2026-04-07', estado:'revision',  elaborado:'L.M. Herrera' },
+  { mun:'Bucaramanga',   tributo:'ICA Q1/2026',        valor:8240000,  vto:'2026-04-07', estado:'revision',  elaborado:'C.A. Rincón' },
+  { mun:'Medellín',      tributo:'Reteica Mar/2026',   valor:1600000,  vto:'2026-04-10', estado:'borrador',  elaborado:'C.A. Rincón' },
+  { mun:'Cali',          tributo:'Reteica Mar/2026',   valor:1400000,  vto:'2026-04-11', estado:'borrador',  elaborado:'L.M. Herrera' },
+  { mun:'Barranquilla',  tributo:'Reteica Mar/2026',   valor:975000,   vto:'2026-04-10', estado:'aprobada',  elaborado:'M.P. Salcedo' },
+  { mun:'Bogotá D.C.',   tributo:'ICA Q4/2025',        valor:9000000,  vto:'2026-01-20', estado:'pagada',    elaborado:'L.M. Herrera' },
+  { mun:'Medellín',      tributo:'ICA Q4/2025',        valor:7000000,  vto:'2026-01-22', estado:'pagada',    elaborado:'C.A. Rincón' },
+  { mun:'Cali',          tributo:'ICA Q4/2025',        valor:6000000,  vto:'2026-01-22', estado:'pagada',    elaborado:'M.P. Salcedo' },
+];
+
+const LIQUIDACIONES_RECIENTES = [
+  { mun:'Bogotá D.C.',   contrato:'2026-INV-0089', base:450000000,  retencion:2250000, estado:'pagada' },
+  { mun:'Bucaramanga',   contrato:'2026-INV-0102', base:2060000000, retencion:8240000, estado:'declarada' },
+  { mun:'Medellín',      contrato:'2026-INV-0091', base:320000000,  retencion:1600000, estado:'borrador' },
+  { mun:'Pereira',       contrato:'2026-INV-0078', base:134000000,  retencion:670000,  estado:'borrador' },
+  { mun:'Cartagena',     contrato:'2026-INV-0115', base:167000000,  retencion:835000,  estado:'aprobada' },
+];
+
+const RESPUESTAS_IA = {
+  0: {
+    pregunta: '¿Los contratos interadministrativos están gravados con ICA?',
+    respuesta: `**Respuesta:** Los contratos interadministrativos celebrados entre entidades públicas del orden nacional tienen tratamiento especial bajo el régimen del ICA.
+
+**Marco normativo aplicable:**
+
+Según la **Ley 14 de 1983, Art. 33** y el **Decreto 1333 de 1986**, el ICA recae sobre actividades industriales, comerciales y de servicios realizadas en el respectivo municipio.
+
+Sin embargo, la **Sentencia C-220 de 1996 de la Corte Constitucional** y la jurisprudencia del **Consejo de Estado, Sección Cuarta (Sentencia 18642 de 2014)** han establecido que:
+
+1. Las entidades de derecho público sí pueden ser sujetos pasivos del ICA cuando realizan actividades gravadas.
+2. Cuando actúan como **agentes retenedores** (ReteICA), deben practicar la retención independientemente de si su contratista es público o privado.
+3. Los contratos interadministrativos donde **ambas partes son entidades públicas** pueden tener tratamiento de exención en algunos municipios si el estatuto local así lo establece.
+
+**Recomendación:** Verificar en el estatuto tributario de cada municipio si existe exención específica para contratos interadministrativos. Bogotá (Acuerdo 820/2021, Art. 42) y Medellín (Acuerdo 76/2023, Art. 38) contemplan tratamientos diferenciales.
+
+*Fuentes: Ley 14/1983 · Decreto 1333/1986 · Sentencia C-220/1996 · Sentencia CE-18642/2014*`
+  },
+  1: {
+    pregunta: '¿Cuál es la tarifa de Reteica para consultoría en Bogotá?',
+    respuesta: `**Respuesta:** La tarifa de Retención en la Fuente a título de ICA (ReteICA) para actividades de consultoría en Bogotá D.C. es del **3.3 por mil (3.3‰)** del valor del contrato o del pago.
+
+**Base normativa:**
+
+- **Acuerdo 820 de 2021 del Concejo de Bogotá**, Artículo 156 y ss., establece las tarifas de ICA para el Distrito Capital.
+- **Decreto Distrital 245 de 2022**, que reglamentó la retención en la fuente a título de ICA para el año gravable 2022 en adelante.
+
+La consultoría (CIIU 7020, 7110, 7112) se clasifica en la actividad de **servicios profesionales** con tarifa base de **5‰**, pero la retención anticipada (ReteICA) se aplica al **66% de la tarifa**, resultando en **3.3‰**.
+
+**Importante:** Si el contratista es **gran contribuyente** o está en el **Régimen Simple de Tributación**, las reglas de retención varían.
+
+*Fuentes: Acuerdo Distrital 820/2021, Art. 156 · Decreto 245/2022 · Concepto DIAN 1556/2022*`
+  },
+  2: {
+    pregunta: '¿Las entidades de derecho público son sujetos pasivos del predial?',
+    respuesta: `**Respuesta:** **Sí**, las entidades de derecho público son sujetos pasivos del Impuesto Predial Unificado (IPU) respecto de los bienes inmuebles de su propiedad, con algunas excepciones importantes.
+
+**Regla general:**
+La **Ley 44 de 1990, Art. 1** y el **Decreto 1333 de 1986** establecen que el impuesto predial grava los bienes inmuebles ubicados en el territorio municipal, independientemente de quién sea su propietario.
+
+**Excepciones (bienes exentos o excluidos):**
+1. **Bienes del dominio público** de uso público (parques, vías, plazas) — excluidos por naturaleza.
+2. **Bienes fiscales** afectados al servicio público directo — pueden tener tratamiento diferencial según el estatuto municipal.
+3. Algunos municipios otorgan **exención** a bienes de entidades del orden nacional mediante acuerdo.
+
+**Para INVIAS específicamente:** Los predios donde se ubican instalaciones de infraestructura vial (derechos de vía, instalaciones técnicas) pueden tener tratamiento diferencial que debe verificarse municipio a municipio.
+
+*Fuentes: Ley 44/1990 · Decreto 1333/1986 · Ley 1450/2011, Art. 23 · Concepto MinHacienda 1-2022-004512*`
+  },
+  3: {
+    pregunta: '¿Qué pasa si no se declara ICA en la fecha límite?',
+    respuesta: `**Respuesta:** El incumplimiento en la declaración del ICA (o Reteica) genera consecuencias económicas y disciplinarias significativas para la entidad y sus funcionarios responsables.
+
+**Consecuencias tributarias:**
+
+1. **Sanción por extemporaneidad** (art. 59, Ley 788/2002):
+   - 5% del total del impuesto por cada mes o fracción de retraso
+   - Límite: hasta el 100% del valor del impuesto
+   - No inferior a 10 UVT
+
+2. **Intereses moratorios** (tasa de usura certificada por la Superfinanciera):
+   - Se causan desde el día siguiente al vencimiento
+   - Actualmente aprox. 28-30% EA (2026)
+
+3. **Sanción por no declarar** (si el municipio la detecta primero):
+   - Entre el 20% y el 40% del impuesto estimado
+
+**Consecuencias disciplinarias:**
+- **Falta disciplinaria** del funcionario responsable bajo la Ley 734 de 2002
+- Posible configuración de **detrimento patrimonial** (Ley 610 de 2000) si las sanciones eran evitables
+- Responsabilidad fiscal ante la **Contraloría General** por el valor de las sanciones pagadas
+
+*Fuentes: Ley 788/2002, Art. 59 · Ley 610/2000 · Ley 734/2002 · Estatutos tributarios municipales*`
+  },
+  4: {
+    pregunta: '¿Dónde se radica la estampilla departamental?',
+    respuesta: `**Respuesta:** La radicación de la estampilla departamental varía según el tipo de estampilla y el departamento. En Colombia existen múltiples tipos de estampillas creadas por ordenanzas departamentales.
+
+**Tipos más comunes que afectan a INVIAS:**
+
+1. **Estampilla Pro-Universidad** (varía por departamento):
+   - Se radica ante la **Secretaría de Hacienda Departamental**
+   - O en la entidad beneficiaria (según la ordenanza)
+   - Tarifa típica: 1% a 3% sobre contratos ejecutados en el departamento
+
+2. **Estampilla Pro-Bienestar del Anciano**:
+   - Radicación en **Secretaría de Hacienda Departamental**
+   - Base: contratos suscritos con cargo a recursos públicos
+
+3. **Estampilla Pro-Hospital**: idem esquema departamental.
+
+**Regla práctica:** La entidad que suscribe el contrato debe:
+- Identificar qué estampillas aplican en el departamento de ejecución
+- Practicar la retención al momento del pago al contratista
+- Radicar y pagar en la Secretaría de Hacienda del departamento o la entidad beneficiaria designada
+
+**Ejemplo Antioquia:** Estampilla Pro-UN → Radicación en la Secretaría de Hacienda de Antioquia antes del último día hábil del mes siguiente (Ordenanza 15/2023, Art. 12).
+
+*Fuentes: Ordenanza 015/2023 Antioquia · Ley 1356/2009 (Pro-Anciano) · Concepto MinHacienda 2-2023-007891*`
+  },
+};
+
+const preguntas_genericas = [
+  {
+    keywords: ['tarifa', 'ica', 'bogota', 'bogotá'],
+    respuesta: (q) => `**Tarifas ICA Bogotá D.C. (Acuerdo 820/2021):**\n\nLa tarifa varía según la actividad económica (CIIU):\n- Servicios profesionales y consultoría: **5‰**\n- Construcción de obras civiles: **5‰**\n- Actividades comerciales: **4‰** a **7‰**\n- Industria manufacturera: **3‰** a **8‰**\n- ReteICA: 66% de la tarifa aplicable\n\n*Fuente: Acuerdo 820/2021 del Concejo de Bogotá, Arts. 145-160*`
+  },
+  {
+    keywords: ['tarifa', 'medellin', 'medellín'],
+    respuesta: (q) => `**Tarifas ICA Medellín (Acuerdo 076/2023):**\n\nTarifas vigentes 2023-2027:\n- Servicios en general: **5‰**\n- Obras civiles: **5‰**\n- Actividades financieras: **8‰**\n- Comercio al por mayor/menor: **4‰**\n- ReteICA: aplica para contratos > 27 UVT\n\n*Fuente: Acuerdo 76/2023 del Concejo de Medellín, Arts. 34-45*`
+  },
+  {
+    keywords: ['sancion', 'sanción', 'multa', 'extemporanea', 'tarde'],
+    respuesta: (q) => RESPUESTAS_IA[3].respuesta
+  },
+  {
+    keywords: ['predial', 'predio', 'inmueble'],
+    respuesta: (q) => RESPUESTAS_IA[2].respuesta
+  },
+  {
+    keywords: ['estampilla', 'departamental'],
+    respuesta: (q) => RESPUESTAS_IA[4].respuesta
+  },
+];
+
+// ═══════════════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════════════
+
+const fmt = (n) => new Intl.NumberFormat('es-CO', {style:'currency',currency:'COP',maximumFractionDigits:0}).format(n);
+const fmtN = (n) => new Intl.NumberFormat('es-CO',{maximumFractionDigits:0}).format(n);
+
+function badgeEstado(estado) {
+  const map = {
+    critico:   ['badge-rojo',      'Crítico — Hoy'],
+    descuento: ['badge-amarillo',  'Descuento próximo'],
+    proximo:   ['badge-azul',      'Próximo'],
+    pagado:    ['badge-verde',     'Pagado'],
+    futuro:    ['badge-gris',      'Futuro'],
+    revision:  ['badge-amarillo',  'En revisión'],
+    borrador:  ['badge-azul',      'Borrador'],
+    aprobada:  ['badge-verde',     'Aprobada'],
+    radicada:  ['badge-verde',     'Radicada'],
+    vigente:   ['badge-verde',     'Vigente'],
+    alerta:    ['badge-amarillo',  'Alerta >1 año'],
+    critico:   ['badge-rojo',      'Desactualizada'],
+  };
+  const [cls, label] = map[estado] || ['badge-gris', estado];
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${cls}">${label}</span>`;
+}
+
+function daysUntil(dateStr) {
+  const today = new Date('2026-04-07');
+  const d = new Date(dateStr);
+  return Math.ceil((d - today) / (1000*60*60*24));
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════════════════
+
+function showModule(name) {
+  document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+  document.getElementById('mod-' + name).classList.add('active');
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  const titles = {
+    dashboard:'Dashboard', calendario:'Calendario Tributario', jurisdicciones:'Gestor de Jurisdicciones',
+    liquidacion:'Motor de Liquidación ICA', declaraciones:'Declaraciones y Pagos',
+    asistente:'Asistente Normativo IA', normativa:'Base Normativa', auditoria:'Auditoría e Indicadores'
+  };
+  document.getElementById('page-title').textContent = titles[name] || name;
+  // Close notif
+  document.getElementById('notif-panel').classList.add('hidden');
+}
+
+function toggleNotif() {
+  document.getElementById('notif-panel').classList.toggle('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD — INIT
+// ═══════════════════════════════════════════════════════════
+
+function initDashboard() {
+  // Tabla vencimientos
+  const urgentes = OBLIGACIONES.filter(o => !o.pagado).slice(0, 7);
+  const tbody = document.getElementById('tabla-vencimientos');
+  tbody.innerHTML = urgentes.map(o => {
+    const days = daysUntil(o.vto);
+    const daysLabel = days === 0 ? '<span class="text-red-600 font-bold">HOY</span>' :
+                      days < 0  ? `<span class="text-red-600 font-bold">${Math.abs(days)} días VENCIDO</span>` :
+                      `<span class="${days<=2?'text-red-600':days<=5?'text-amber-600':'text-slate-600'}">${days} días</span>`;
+    const descuento = o.descuento_vto ? `<div class="text-xs text-amber-600">Desc. ${o.descuento_pct}% vto ${o.descuento_vto.slice(8)}/Abr</div>` : '';
+    return `<tr class="table-row border-b border-slate-50">
+      <td class="py-2.5 font-medium">${o.mun}</td>
+      <td class="py-2.5">${o.tributo}</td>
+      <td class="py-2.5 text-slate-500">${o.periodo}</td>
+      <td class="py-2.5 text-right font-medium monto-grande">${fmt(o.valor)}</td>
+      <td class="py-2.5 pl-4">${daysLabel}${descuento}</td>
+      <td class="py-2.5">${badgeEstado(o.estado)}</td>
+      <td class="py-2.5"><button onclick="showModule('liquidacion')" class="text-xs text-blue-600 hover:underline">Liquidar</button></td>
+    </tr>`;
+  }).join('');
+
+  // Cobertura deptos
+  const deptos = [
+    { nombre:'Cundinamarca / Bogotá', muns:8, completados:7 },
+    { nombre:'Antioquia',             muns:6, completados:5 },
+    { nombre:'Valle del Cauca',       muns:4, completados:4 },
+    { nombre:'Atlántico / Bolívar',   muns:4, completados:3 },
+    { nombre:'Eje Cafetero',          muns:5, completados:5 },
+    { nombre:'Otros (23 deptos.)',    muns:23, completados:19 },
+  ];
+  document.getElementById('cobertura-deptos').innerHTML = deptos.map(d => {
+    const pct = Math.round(d.completados/d.muns*100);
+    return `<div>
+      <div class="flex justify-between mb-1 text-xs">
+        <span>${d.nombre}</span>
+        <span class="text-slate-500">${d.completados}/${d.muns} municipios</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${pct===100?'bg-green-500':pct>=75?'bg-blue-500':'bg-amber-500'}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  // Actividad reciente
+  const actividades = [
+    { icono:'✅', texto:'ICA Q4/2025 Bogotá — Pagado', tiempo:'Hace 2 días', color:'text-green-600' },
+    { icono:'📄', texto:'Declaración Bucaramanga — En revisión', tiempo:'Hace 3 horas', color:'text-amber-600' },
+    { icono:'🔔', texto:'Alerta: Descuento Medellín expira mañana', tiempo:'Automático', color:'text-red-500' },
+    { icono:'📚', texto:'Acuerdo 018/2026 Cali cargado por corresponsal', tiempo:'Hace 1 día', color:'text-blue-600' },
+    { icono:'🧮', texto:'Liquidación Pereira generada automáticamente', tiempo:'Hace 4 horas', color:'text-slate-600' },
+  ];
+  document.getElementById('actividad-reciente').innerHTML = actividades.map(a =>
+    `<div class="flex items-start gap-2 border-b border-slate-50 pb-2">
+      <span>${a.icono}</span>
+      <div class="flex-1"><div class="${a.color} font-medium">${a.texto}</div>
+      <div class="text-xs text-slate-400">${a.tiempo}</div></div>
+    </div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════
+
+function initCharts() {
+  // Chart tributos
+  new Chart(document.getElementById('chart-tributos'), {
+    type: 'bar',
+    data: {
+      labels: ['Ene 2026', 'Feb 2026', 'Mar 2026'],
+      datasets: [
+        { label: 'ICA / Reteica', data: [62400000, 58900000, 71200000], backgroundColor: '#3b82f6' },
+        { label: 'Predial', data: [15200000, 0, 0], backgroundColor: '#22c55e' },
+        { label: 'Estampillas', data: [9800000, 10200000, 11400000], backgroundColor: '#f59e0b' },
+        { label: 'Vehículos', data: [2100000, 0, 0], backgroundColor: '#a855f7' },
+      ]
+    },
+    options: { responsive:true, plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+      scales:{ x:{grid:{display:false}}, y:{ticks:{callback: v => '$'+fmtN(v/1000000)+'M'}} } }
+  });
+
+  // Chart cumplimiento
+  new Chart(document.getElementById('chart-cumplimiento'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Pagadas', 'En proceso', 'Críticas'],
+      datasets:[{ data:[89,30,8], backgroundColor:['#22c55e','#3b82f6','#ef4444'], borderWidth:0 }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}}, cutout:'70%' }
+  });
+
+  // Chart auditoría
+  new Chart(document.getElementById('chart-auditoria'), {
+    type: 'line',
+    data: {
+      labels: ['Oct 25','Nov 25','Dic 25','Ene 26','Feb 26','Mar 26'],
+      datasets: [
+        { label:'Cumplimiento %', data:[94,97,96,98,99,100], borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,0.1)', tension:0.4, fill:true },
+        { label:'Sanciones $M', data:[2.1,0.8,1.2,0,0,0], borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', tension:0.4, fill:true, yAxisID:'y1' },
+      ]
+    },
+    options: { responsive:true,
+      scales: {
+        y:  { min:90, max:100, ticks:{callback:v=>v+'%'}, grid:{display:false} },
+        y1: { position:'right', ticks:{callback:v=>'$'+v+'M'} }
+      },
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALENDARIO
+// ═══════════════════════════════════════════════════════════
+
+function initCalendario() {
+  renderCalendario(OBLIGACIONES.filter(o => !o.pagado));
+}
+
+function renderCalendario(data) {
+  const tbody = document.getElementById('tabla-calendario');
+  tbody.innerHTML = data.map(o => {
+    const days = daysUntil(o.vto);
+    const daysLabel = days === 0 ? 'HOY' : days < 0 ? `${Math.abs(days)}d VENCIDO` : `${days} días`;
+    const daysColor = days <= 0 ? 'text-red-600 font-bold' : days <= 2 ? 'text-red-500 font-bold' : days <= 5 ? 'text-amber-600 font-medium' : 'text-slate-600';
+    const descBlock = o.descuento_vto
+      ? `<div class="text-xs"><span class="badge-amarillo px-1.5 py-0.5 rounded-full">-${o.descuento_pct}% pronto pago</span><div class="text-amber-600 mt-0.5">Vto desc: ${o.descuento_vto}</div><div class="text-green-600 font-medium">Ahorro: ${fmt(o.valor*o.descuento_pct/100)}</div></div>`
+      : '<span class="text-slate-400 text-xs">N/A</span>';
+    return `<tr class="table-row border-b border-slate-50">
+      <td class="px-4 py-3 font-medium">${o.mun}</td>
+      <td class="px-4 py-3">${o.tributo}</td>
+      <td class="px-4 py-3 text-slate-500">${o.periodo}</td>
+      <td class="px-4 py-3 text-right monto-grande">${fmt(o.base)}</td>
+      <td class="px-4 py-3 text-right font-medium monto-grande">${fmt(o.valor)}</td>
+      <td class="px-4 py-3">${descBlock}</td>
+      <td class="px-4 py-3"><span class="${daysColor}">${daysLabel}</span><div class="text-xs text-slate-400">${o.vto}</div></td>
+      <td class="px-4 py-3">${badgeEstado(o.estado)}</td>
+      <td class="px-4 py-3">
+        <button onclick="showModule('liquidacion')" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">Liquidar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarCalendario(tributo) {
+  const data = tributo === 'todos' ? OBLIGACIONES.filter(o=>!o.pagado) :
+    OBLIGACIONES.filter(o => !o.pagado && o.tributo.includes(tributo));
+  renderCalendario(data);
+}
+
+// ═══════════════════════════════════════════════════════════
+// JURISDICCIONES
+// ═══════════════════════════════════════════════════════════
+
+function initJurisdicciones() {
+  renderJurisdicciones(MUNICIPIOS);
+  // Poblar select de liquidación
+  const sel = document.getElementById('liq-municipio');
+  MUNICIPIOS.forEach(m => {
+    sel.innerHTML += `<option value="${m.id}">${m.nombre} (${m.depto})</option>`;
+  });
+}
+
+function renderJurisdicciones(data) {
+  const tbody = document.getElementById('tabla-jurisdicciones');
+  tbody.innerHTML = data.map(m => {
+    const normaAge = Math.floor((new Date('2026-04-07') - new Date(m.norma_fecha)) / (1000*60*60*24*365));
+    const estadoNorma = normaAge < 1 ? 'vigente' : normaAge < 3 ? 'alerta' : 'critico';
+    return `<tr class="table-row border-b border-slate-50 text-sm">
+      <td class="px-4 py-3 font-medium">${m.nombre}</td>
+      <td class="px-4 py-3 text-slate-600">${m.depto}</td>
+      <td class="px-4 py-3 text-center"><span class="text-xs font-medium bg-slate-100 px-2 py-0.5 rounded">${m.cat}</span></td>
+      <td class="px-4 py-3 text-xs">${m.tributos.join(' · ')}</td>
+      <td class="px-4 py-3 font-mono text-sm">${(m.tarifa*1000).toFixed(1)}‰</td>
+      <td class="px-4 py-3 text-xs">${m.norma}<div class="text-slate-400">${m.norma_fecha}</div></td>
+      <td class="px-4 py-3">${badgeEstado(estadoNorma)}</td>
+      <td class="px-4 py-3">${m.portal ? '<span class="text-green-600 text-xs font-medium">API ✓</span>' : '<span class="text-slate-400 text-xs">Manual</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buscarMunicipio(q) {
+  renderJurisdicciones(MUNICIPIOS.filter(m => m.nombre.toLowerCase().includes(q.toLowerCase()) || m.depto.toLowerCase().includes(q.toLowerCase())));
+}
+function filtrarCategoria(cat) {
+  renderJurisdicciones(cat ? MUNICIPIOS.filter(m => m.cat == cat) : MUNICIPIOS);
+}
+
+// ═══════════════════════════════════════════════════════════
+// LIQUIDACIÓN ICA
+// ═══════════════════════════════════════════════════════════
+
+function actualizarTarifa() {
+  const munId = document.getElementById('liq-municipio').value;
+  const ciiu  = document.getElementById('liq-ciiu').value;
+  if (!munId) return;
+  const mun = MUNICIPIOS.find(m => m.id === munId);
+  if (!mun) return;
+  const ciiu_data = CIIU_TARIFAS[ciiu] || { tarifa_mod: 1.0 };
+  const tarifa_ef = mun.tarifa * ciiu_data.tarifa_mod;
+  document.getElementById('liq-norma-info').innerHTML = `
+    <div class="font-medium text-blue-700 mb-1">${mun.nombre} — Norma aplicable</div>
+    <div class="text-blue-600">${mun.norma} · Tarifa base: ${(mun.tarifa*1000).toFixed(1)}‰</div>
+    <div class="text-blue-500 mt-1">CIIU ${ciiu}: tarifa efectiva <strong>${(tarifa_ef*1000).toFixed(2)}‰</strong></div>
+    <div class="text-slate-500 mt-1">Departamento: ${mun.depto} · Categoría ${mun.cat}</div>
+  `;
+  calcularLiquidacion();
+}
+
+function calcularLiquidacion() {
+  const munId = document.getElementById('liq-municipio').value;
+  const valor = parseFloat(document.getElementById('liq-valor').value) || 0;
+  const ciiu  = document.getElementById('liq-ciiu').value;
+  const periodo = document.getElementById('liq-periodo').value + ' ' + document.getElementById('liq-anio').value;
+  const contrato = document.getElementById('liq-contrato').value || 'Sin especificar';
+
+  if (!munId || valor === 0) return;
+
+  const mun = MUNICIPIOS.find(m => m.id === munId);
+  if (!mun) return;
+  const ciiu_data = CIIU_TARIFAS[ciiu] || { nombre: 'Actividad seleccionada', tarifa_mod: 1.0 };
+  const tarifa_ef = mun.tarifa * ciiu_data.tarifa_mod;
+  const retencion = Math.round(valor * tarifa_ef);
+  const hoy = new Date('2026-04-07');
+
+  const html = `
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="font-medium text-slate-700">Resultado de Liquidación</div>
+        <span class="badge-verde px-2 py-1 rounded-full text-xs font-medium">Calculado</span>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <div class="text-sm font-medium text-blue-800 mb-3">Trazabilidad Normativa</div>
+        <div class="grid grid-cols-2 gap-2 text-xs text-blue-700">
+          <div><span class="font-medium">Municipio:</span> ${mun.nombre}</div>
+          <div><span class="font-medium">Norma:</span> ${mun.norma}</div>
+          <div><span class="font-medium">Actividad:</span> CIIU ${ciiu} — ${ciiu_data.nombre}</div>
+          <div><span class="font-medium">Período:</span> ${periodo}</div>
+          <div><span class="font-medium">Tarifa base:</span> ${(mun.tarifa*1000).toFixed(1)}‰</div>
+          <div><span class="font-medium">Modificador CIIU:</span> ×${ciiu_data.tarifa_mod}</div>
+        </div>
+      </div>
+
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between py-2 border-b border-slate-100">
+          <span class="text-slate-600">Valor del pago / factura</span>
+          <span class="font-medium monto-grande">${fmt(valor)}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-slate-100">
+          <span class="text-slate-600">Tarifa efectiva (${(tarifa_ef*1000).toFixed(2)}‰)</span>
+          <span class="font-medium text-blue-600">× ${(tarifa_ef*1000).toFixed(2)} / 1000</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-slate-100">
+          <span class="text-slate-600">Base gravable</span>
+          <span class="font-medium monto-grande">${fmt(valor)}</span>
+        </div>
+        <div class="flex justify-between py-3 bg-slate-50 rounded-lg px-3">
+          <span class="font-semibold text-slate-800 text-base">RETENCIÓN ICA A PRACTICAR</span>
+          <span class="font-bold text-xl text-blue-700 monto-grande">${fmt(retencion)}</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-slate-600">Valor neto a girar al contratista</span>
+          <span class="font-medium monto-grande">${fmt(valor - retencion)}</span>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs">
+        <div class="font-medium text-amber-700 mb-1">Obligaciones derivadas de esta retención</div>
+        <div class="text-amber-600">
+          La retención de ${fmt(retencion)} debe declararse y pagarse a la Secretaría de Hacienda de ${mun.nombre}
+          antes del último día hábil del mes siguiente al pago.
+          ${mun.portal ? ' Portal disponible: radicación automática habilitada.' : ' Radicación: proceso manual (municipio sin portal digital).'}
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700" onclick="showModule('declaraciones')">
+          Generar Declaración
+        </button>
+        <button class="border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-50">
+          Exportar PDF
+        </button>
+      </div>
+    </div>
+  `;
+  document.getElementById('liq-resultado').innerHTML = html;
+}
+
+function initLiquidacion() {
+  const tbody = document.getElementById('tabla-liquidaciones-recientes');
+  tbody.innerHTML = LIQUIDACIONES_RECIENTES.map(l => `
+    <tr class="border-b border-slate-50 table-row">
+      <td class="py-2">${l.mun}</td>
+      <td class="py-2 text-slate-500">${l.contrato}</td>
+      <td class="py-2 text-right monto-grande">${fmt(l.base)}</td>
+      <td class="py-2 text-right font-medium monto-grande text-blue-600">${fmt(l.retencion)}</td>
+      <td class="py-2 pl-3">${badgeEstado(l.estado)}</td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DECLARACIONES
+// ═══════════════════════════════════════════════════════════
+
+function initDeclaraciones() {
+  const tbody = document.getElementById('tabla-declaraciones');
+  tbody.innerHTML = DECLARACIONES_DATA.map(d => {
+    const days = daysUntil(d.vto);
+    const daysLabel = days <= 0 ? `<span class="text-red-600 font-bold">HOY</span>` :
+                      days <= 3 ? `<span class="text-red-500">${days}d</span>` :
+                      `<span class="text-slate-600">${days}d</span>`;
+    return `<tr class="table-row border-b border-slate-50 text-sm">
+      <td class="px-4 py-3 font-medium">${d.mun}</td>
+      <td class="px-4 py-3"><div>${d.tributo}</div></td>
+      <td class="px-4 py-3 text-right font-medium monto-grande">${fmt(d.valor)}</td>
+      <td class="px-4 py-3"><div>${d.vto}</div><div>${daysLabel}</div></td>
+      <td class="px-4 py-3">${badgeEstado(d.estado)}</td>
+      <td class="px-4 py-3 text-slate-500 text-xs">${d.elaborado}</td>
+      <td class="px-4 py-3">
+        ${d.estado==='revision' ? '<button class="text-xs bg-green-600 text-white px-2 py-1 rounded mr-1 hover:bg-green-700">Aprobar</button><button class="text-xs border border-slate-200 px-2 py-1 rounded hover:bg-slate-50">Rechazar</button>' :
+          d.estado==='borrador' ? '<button class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">Enviar a revisión</button>' :
+          d.estado==='aprobada' ? '<button class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700">Radicar</button>' :
+          d.estado==='pagada'   ? '<button class="text-xs border border-slate-200 px-2 py-1 rounded hover:bg-slate-50">Ver soporte</button>' : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// NORMATIVA
+// ═══════════════════════════════════════════════════════════
+
+function initNormativa() {
+  const tbody = document.getElementById('tabla-normativa');
+  tbody.innerHTML = NORMATIVA.map(n => {
+    const estadoClass = n.estado === 'Vigente' ? 'badge-verde' :
+                        n.estado.includes('ALERTA') ? 'badge-rojo' : 'badge-amarillo';
+    return `<tr class="table-row border-b border-slate-50 text-sm">
+      <td class="px-4 py-3"><span class="text-xs bg-slate-100 px-2 py-0.5 rounded">${n.tipo}</span></td>
+      <td class="px-4 py-3 font-medium">${n.id}</td>
+      <td class="px-4 py-3 text-slate-600">${n.juris}</td>
+      <td class="px-4 py-3 text-slate-500">${n.fecha}</td>
+      <td class="px-4 py-3">${n.tema}</td>
+      <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full ${estadoClass}">${n.estado}</span></td>
+      <td class="px-4 py-3 text-xs text-slate-500">${n.fuente}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUDITORÍA
+// ═══════════════════════════════════════════════════════════
+
+function initAuditoria() {
+  const logs = [
+    { quien:'L.M. Herrera',  accion:'Aprobó declaración', detalle:'Bucaramanga ICA Q1/2026 — $8,240,000', tiempo:'Hace 30 min', icono:'✅' },
+    { quien:'Sistema GTTP',  accion:'Alerta automática',  detalle:'7 municipios con descuento expiran mañana', tiempo:'Hace 2 horas', icono:'🔔' },
+    { quien:'C.A. Rincón',   accion:'Calculó liquidación', detalle:'Medellín Reteica Mar/2026', tiempo:'Hace 3 horas', icono:'🧮' },
+    { quien:'Sistema GTTP',  accion:'Norma cargada',       detalle:'Acuerdo 018/2026 Cali — Pendiente validación', tiempo:'Hace 1 día', icono:'📚' },
+    { quien:'M.P. Salcedo',  accion:'Declaración aprobada', detalle:'Barranquilla Reteica Mar/2026', tiempo:'Hace 1 día', icono:'✅' },
+    { quien:'Sistema GTTP',  accion:'Pago confirmado',     detalle:'ICA Q4/2025 Bogotá — $9,000,000', tiempo:'Hace 2 días', icono:'💳' },
+    { quien:'Sistema GTTP',  accion:'Pago confirmado',     detalle:'ICA Q4/2025 Medellín — $7,000,000', tiempo:'Hace 2 días', icono:'💳' },
+  ];
+  document.getElementById('log-auditoria').innerHTML = logs.map(l =>
+    `<div class="flex items-start gap-2 border-b border-slate-50 pb-2">
+      <span class="text-base">${l.icono}</span>
+      <div class="flex-1">
+        <div class="font-medium text-slate-700">${l.accion} <span class="text-slate-400 font-normal">— ${l.quien}</span></div>
+        <div class="text-slate-500">${l.detalle}</div>
+        <div class="text-slate-400 text-xs mt-0.5">${l.tiempo}</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ASISTENTE IA
+// ═══════════════════════════════════════════════════════════
+
+let isTyping = false;
+
+function preguntaRapida(idx) {
+  const data = RESPUESTAS_IA[idx];
+  addUserMessage(data.pregunta);
+  setTimeout(() => addBotMessage(data.respuesta), 800);
+}
+
+function enviarMensaje() {
+  const input = document.getElementById('chat-input');
+  const texto = input.value.trim();
+  if (!texto || isTyping) return;
+  input.value = '';
+  addUserMessage(texto);
+
+  // Buscar respuesta
+  const textoLower = texto.toLowerCase();
+  let respuesta = null;
+
+  // Buscar en respuestas fijas
+  for (const [k, v] of Object.entries(RESPUESTAS_IA)) {
+    if (v.pregunta.toLowerCase().includes(textoLower.slice(0,20)) ||
+        textoLower.includes(k == '0' ? 'interadministrativ' :
+          k == '1' ? 'tarifa' : k == '2' ? 'predial' : k == '3' ? 'sancion' : 'estampilla')) {
+      respuesta = v.respuesta; break;
+    }
+  }
+  // Buscar en genéricas
+  if (!respuesta) {
+    for (const r of preguntas_genericas) {
+      if (r.keywords.some(kw => textoLower.includes(kw))) {
+        respuesta = r.respuesta(texto); break;
+      }
+    }
+  }
+  if (!respuesta) {
+    respuesta = `**Consultando base normativa...**\n\nHe buscado en los ${1842} documentos indexados relacionados con tu consulta sobre "${texto}".\n\nPara esta pregunta específica, le recomiendo:\n1. Verificar el estatuto tributario del municipio de interés en la sección "Base Normativa"\n2. Consultar los conceptos de la DIAN disponibles en el sistema\n3. Si requiere un análisis más detallado, un profesional tributario debe revisar el caso específico\n\n*Esta respuesta es de carácter orientativo. La base normativa se actualiza continuamente.*`;
+  }
+
+  setTimeout(() => addBotMessage(respuesta), 900);
+}
+
+function addUserMessage(texto) {
+  const messages = document.getElementById('chat-messages');
+  messages.innerHTML += `<div class="flex gap-3 justify-end">
+    <div class="chat-bubble-user px-4 py-3 text-sm max-w-lg">${texto}</div>
+    <div class="w-7 h-7 bg-slate-300 rounded-full flex items-center justify-center text-slate-600 text-xs shrink-0 font-bold">LH</div>
+  </div>`;
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function addBotMessage(texto) {
+  isTyping = true;
+  const messages = document.getElementById('chat-messages');
+  // Convert markdown-like to HTML
+  const html = texto
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n\n/g, '</p><p class="mt-2">')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>');
+
+  messages.innerHTML += `<div class="flex gap-3">
+    <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs shrink-0">AI</div>
+    <div class="chat-bubble-bot px-4 py-3 text-sm max-w-2xl">${html}
+      <div class="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-400 flex items-center gap-1">
+        <span>🔒</span> Respuesta basada en base normativa verificada
+      </div>
+    </div>
+  </div>`;
+  messages.scrollTop = messages.scrollHeight;
+  isTyping = false;
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+
+window.addEventListener('DOMContentLoaded', () => {
+  initDashboard();
+  initCharts();
+  initCalendario();
+  initJurisdicciones();
+  initLiquidacion();
+  initDeclaraciones();
+  initNormativa();
+  initAuditoria();
+});
+</script>
+</body>
+</html>
