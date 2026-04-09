@@ -383,7 +383,7 @@
                 <th class="text-left px-4 py-3">Tarifa ICA</th>
                 <th class="text-left px-4 py-3">Norma vigente</th>
                 <th class="text-left px-4 py-3">Estado</th>
-                <th class="text-left px-4 py-3">Portal</th>
+                <th class="text-left px-4 py-3">Radicación / CB</th>
               </tr>
             </thead>
             <tbody id="tabla-jurisdicciones"></tbody>
@@ -705,6 +705,64 @@
           </div>
         </div>
 
+        <!-- Pipeline OCR -->
+        <div class="card p-5 mb-5">
+          <div class="font-medium text-slate-700 mb-1">Pipeline de Procesamiento Normativo</div>
+          <div class="text-xs text-slate-500 mb-4">Cadena de ingesta para acuerdos municipales — incluye documentos escaneados sin OCR</div>
+          <div class="flex flex-col md:flex-row items-start md:items-center gap-2 text-xs">
+            <!-- Paso 1 -->
+            <div class="flex-1 bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+              <div class="text-lg mb-1">📥</div>
+              <div class="font-semibold text-blue-700">Detección</div>
+              <div class="text-blue-600 mt-0.5">Web scraping portales<br>Hash SHA-256</div>
+              <div class="mt-1 text-green-600 font-medium">✓ Automático</div>
+            </div>
+            <div class="text-slate-300 text-lg hidden md:block">→</div>
+            <!-- Paso 2 -->
+            <div class="flex-1 bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+              <div class="text-lg mb-1">🔍</div>
+              <div class="font-semibold text-amber-700">Detección tipo PDF</div>
+              <div class="text-amber-600 mt-0.5">¿Texto nativo<br>o imagen escaneada?</div>
+              <div class="mt-1 text-amber-600 font-medium">⚡ 4 docs en cola</div>
+            </div>
+            <div class="text-slate-300 text-lg hidden md:block">→</div>
+            <!-- Paso 3a -->
+            <div class="flex-1 bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+              <div class="text-lg mb-1">📄</div>
+              <div class="font-semibold text-green-700">PDFMiner (texto)</div>
+              <div class="text-green-600 mt-0.5">Extracción directa<br>sin pérdida</div>
+              <div class="mt-1 text-green-600 font-medium">✓ Score: 1.0</div>
+            </div>
+            <div class="text-slate-300 text-base hidden md:block">/</div>
+            <!-- Paso 3b -->
+            <div class="flex-1 bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+              <div class="text-lg mb-1">🖼️</div>
+              <div class="font-semibold text-orange-700">Tesseract OCR</div>
+              <div class="text-orange-600 mt-0.5">Score ≥ 0.7 → OK<br>Score &lt; 0.7 → Manual</div>
+              <div class="mt-1 text-orange-600 font-medium">⚠️ 2 docs a corresponsal</div>
+            </div>
+            <div class="text-slate-300 text-lg hidden md:block">→</div>
+            <!-- Paso 4 -->
+            <div class="flex-1 bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+              <div class="text-lg mb-1">🧩</div>
+              <div class="font-semibold text-purple-700">Chunking + Embedding</div>
+              <div class="text-purple-600 mt-0.5">500 tokens · overlap 50<br>ivfflat lists=100</div>
+              <div class="mt-1 text-green-600 font-medium">✓ Indexado</div>
+            </div>
+          </div>
+          <!-- Docs pendientes OCR -->
+          <div class="mt-4 border-t border-slate-100 pt-3">
+            <div class="text-xs font-semibold text-slate-600 mb-2">Documentos pendientes de revisión OCR</div>
+            <div class="space-y-1.5 text-xs" id="ocr-pendientes"></div>
+          </div>
+        </div>
+
+        <!-- Salud normativa -->
+        <div class="card p-4 mb-5">
+          <div class="font-medium text-slate-700 mb-3">Salud Normativa por Municipio</div>
+          <div class="grid grid-cols-3 gap-3 text-xs" id="salud-normativa"></div>
+        </div>
+
         <div class="card overflow-hidden table-wrap">
           <table class="w-full text-sm min-w-[620px]">
             <thead class="bg-slate-50 border-b border-slate-200">
@@ -765,6 +823,73 @@
           </div>
         </div>
 
+        <!-- RLS Policies -->
+        <div class="card p-5 mb-5">
+          <div class="font-medium text-slate-700 mb-1">Políticas de Seguridad — Row Level Security (RLS)</div>
+          <div class="text-xs text-slate-500 mb-4">Control de acceso a nivel de fila en PostgreSQL. Cada usuario solo ve los datos que su rol permite.</div>
+          <div class="table-wrap">
+          <table class="w-full text-xs min-w-[560px]">
+            <thead class="bg-slate-800 text-white">
+              <tr>
+                <th class="text-left px-3 py-2">Tabla</th>
+                <th class="text-left px-3 py-2">Política</th>
+                <th class="text-left px-3 py-2">Operación</th>
+                <th class="text-left px-3 py-2">Condición USING</th>
+                <th class="text-left px-3 py-2">Roles</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-100 bg-slate-50">
+                <td class="px-3 py-2 font-mono font-semibold text-blue-700">obligaciones</td>
+                <td class="px-3 py-2 font-mono">ver_propias_obligaciones</td>
+                <td class="px-3 py-2"><span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">SELECT</span></td>
+                <td class="px-3 py-2 font-mono text-slate-600">rol IN ('ADMIN','COORDINADOR') OR creado_por = auth.uid()</td>
+                <td class="px-3 py-2">ADMIN · COORDINADOR · CONTADOR</td>
+              </tr>
+              <tr class="border-b border-slate-100">
+                <td class="px-3 py-2 font-mono font-semibold text-blue-700">obligaciones</td>
+                <td class="px-3 py-2 font-mono">insertar_obligacion</td>
+                <td class="px-3 py-2"><span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded">INSERT</span></td>
+                <td class="px-3 py-2 font-mono text-slate-600">rol IN ('ADMIN','COORDINADOR','CONTADOR')</td>
+                <td class="px-3 py-2">ADMIN · COORDINADOR · CONTADOR</td>
+              </tr>
+              <tr class="border-b border-slate-100 bg-slate-50">
+                <td class="px-3 py-2 font-mono font-semibold text-blue-700">declaraciones</td>
+                <td class="px-3 py-2 font-mono">ver_propias_declaraciones</td>
+                <td class="px-3 py-2"><span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">SELECT</span></td>
+                <td class="px-3 py-2 font-mono text-slate-600">entity_id = current_setting('app.entity_id')::uuid</td>
+                <td class="px-3 py-2">Todos (filtrado por entidad)</td>
+              </tr>
+              <tr class="border-b border-slate-100">
+                <td class="px-3 py-2 font-mono font-semibold text-blue-700">norm_documents</td>
+                <td class="px-3 py-2 font-mono">solo_lectura_normativa</td>
+                <td class="px-3 py-2"><span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">SELECT</span></td>
+                <td class="px-3 py-2 font-mono text-slate-600">TRUE (lectura universal)</td>
+                <td class="px-3 py-2">Todos</td>
+              </tr>
+              <tr class="border-b border-slate-100 bg-slate-50">
+                <td class="px-3 py-2 font-mono font-semibold text-blue-700">norm_documents</td>
+                <td class="px-3 py-2 font-mono">escribir_normativa</td>
+                <td class="px-3 py-2"><span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">INSERT / UPDATE</span></td>
+                <td class="px-3 py-2 font-mono text-slate-600">rol = 'SUPER_ADMIN'</td>
+                <td class="px-3 py-2">Solo SUPER_ADMIN</td>
+              </tr>
+              <tr class="border-b border-slate-100">
+                <td class="px-3 py-2 font-mono font-semibold text-blue-700">auditoria</td>
+                <td class="px-3 py-2 font-mono">solo_lectura_auditoria</td>
+                <td class="px-3 py-2"><span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">SELECT</span></td>
+                <td class="px-3 py-2 font-mono text-slate-600">rol IN ('ADMIN','AUDITOR','SUPER_ADMIN')</td>
+                <td class="px-3 py-2">ADMIN · AUDITOR · SUPER_ADMIN</td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+          <div class="mt-3 text-xs text-slate-500 bg-slate-50 rounded p-2">
+            <strong>Nota técnica:</strong> Las políticas RLS se aplican <em>después</em> de la autenticación JWT y <em>antes</em> de cualquier consulta SQL.
+            El parámetro <code class="bg-white border px-1 rounded">app.entity_id</code> se inyecta en cada sesión desde el auth-service al validar el token.
+          </div>
+        </div>
+
         <div class="card p-5">
           <div class="flex items-center justify-between mb-4">
             <div class="font-medium text-slate-700">Reporte de Cumplimiento para Entes de Control</div>
@@ -803,31 +928,31 @@
 // ═══════════════════════════════════════════════════════════
 
 const MUNICIPIOS = [
-  { id:'bogota',      nombre:'Bogotá D.C.',     depto:'Cundinamarca', cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 820/2021', norma_fecha:'2021-12-15', portal:true,  tributos:['ICA','Predial','Vehículos','Reteica'], estado:'vigente' },
-  { id:'medellin',    nombre:'Medellín',         depto:'Antioquia',    cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 76/2023',  norma_fecha:'2023-08-10', portal:true,  tributos:['ICA','Predial','Estampilla','Reteica'], estado:'vigente' },
-  { id:'cali',        nombre:'Cali',             depto:'Valle Cauca',  cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 530/2024', norma_fecha:'2024-02-20', portal:true,  tributos:['ICA','Predial','Vehículos','Reteica'], estado:'vigente' },
-  { id:'barranquilla',nombre:'Barranquilla',     depto:'Atlántico',    cat:1, tarifa:0.005,  tarifa_min:0.003, norma:'Decreto 0621/2022',norma_fecha:'2022-11-05', portal:true,  tributos:['ICA','Predial','Reteica'], estado:'vigente' },
-  { id:'bucaramanga', nombre:'Bucaramanga',      depto:'Santander',    cat:1, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 019/2023', norma_fecha:'2023-06-15', portal:true,  tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
-  { id:'cartagena',   nombre:'Cartagena',        depto:'Bolívar',      cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Decreto 1250/2023',norma_fecha:'2023-09-01', portal:true,  tributos:['ICA','Predial','Reteica'], estado:'vigente' },
-  { id:'cucuta',      nombre:'Cúcuta',           depto:'N. Santander', cat:1, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 034/2022', norma_fecha:'2022-07-20', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
-  { id:'pereira',     nombre:'Pereira',          depto:'Risaralda',    cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 012/2024', norma_fecha:'2024-03-10', portal:true,  tributos:['ICA','Predial','Estampilla','Reteica'], estado:'vigente' },
-  { id:'manizales',   nombre:'Manizales',        depto:'Caldas',       cat:2, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 815/2023', norma_fecha:'2023-11-22', portal:true,  tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
-  { id:'ibague',      nombre:'Ibagué',           depto:'Tolima',       cat:2, tarifa:0.0045, tarifa_min:0.002, norma:'Acuerdo 028/2022', norma_fecha:'2022-10-05', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
-  { id:'villavicencio',nombre:'Villavicencio',   depto:'Meta',         cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 014/2023', norma_fecha:'2023-04-18', portal:false, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
-  { id:'neiva',       nombre:'Neiva',            depto:'Huila',        cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 021/2021', norma_fecha:'2021-08-30', portal:false, tributos:['ICA','Predial'], estado:'alerta' },
-  { id:'armenia',     nombre:'Armenia',          depto:'Quindío',      cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 018/2023', norma_fecha:'2023-07-14', portal:true,  tributos:['ICA','Predial','Reteica'], estado:'vigente' },
-  { id:'monteria',    nombre:'Montería',         depto:'Córdoba',      cat:2, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 031/2022', norma_fecha:'2022-12-01', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
-  { id:'sincelejo',   nombre:'Sincelejo',        depto:'Sucre',        cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 009/2021', norma_fecha:'2021-06-15', portal:false, tributos:['ICA','Predial'], estado:'alerta' },
-  { id:'valledupar',  nombre:'Valledupar',       depto:'Cesar',        cat:2, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 016/2024', norma_fecha:'2024-01-20', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
-  { id:'pasto',       nombre:'Pasto',            depto:'Nariño',       cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 042/2023', norma_fecha:'2023-09-08', portal:false, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
-  { id:'tunja',       nombre:'Tunja',            depto:'Boyacá',       cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 025/2022', norma_fecha:'2022-11-20', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
-  { id:'popayan',     nombre:'Popayán',          depto:'Cauca',        cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 030/2022', norma_fecha:'2022-08-10', portal:false, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
-  { id:'florencia',   nombre:'Florencia',        depto:'Caquetá',      cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 007/2020', norma_fecha:'2020-10-05', portal:false, tributos:['ICA','Predial'], estado:'critico' },
-  { id:'riohacha',    nombre:'Riohacha',         depto:'La Guajira',   cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 011/2021', norma_fecha:'2021-11-30', portal:false, tributos:['ICA','Predial'], estado:'alerta' },
-  { id:'quibdo',      nombre:'Quibdó',           depto:'Chocó',        cat:4, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 003/2019', norma_fecha:'2019-08-20', portal:false, tributos:['ICA','Predial'], estado:'critico' },
-  { id:'arauca',      nombre:'Arauca',           depto:'Arauca',       cat:4, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 008/2022', norma_fecha:'2022-05-15', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
-  { id:'yopal',       nombre:'Yopal',            depto:'Casanare',     cat:4, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 015/2023', norma_fecha:'2023-03-22', portal:false, tributos:['ICA','Predial'], estado:'vigente' },
-  { id:'mitú',        nombre:'Mitú',             depto:'Vaupés',       cat:5, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 001/2018', norma_fecha:'2018-04-10', portal:false, tributos:['ICA','Predial'], estado:'critico' },
+  { id:'bogota',      nombre:'Bogotá D.C.',     depto:'Cundinamarca', cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 820/2021', norma_fecha:'2021-12-15', portal:true,  cb_state:'ok',       cb_fallos:0, tributos:['ICA','Predial','Vehículos','Reteica'], estado:'vigente' },
+  { id:'medellin',    nombre:'Medellín',         depto:'Antioquia',    cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 76/2023',  norma_fecha:'2023-08-10', portal:true,  cb_state:'ok',       cb_fallos:0, tributos:['ICA','Predial','Estampilla','Reteica'], estado:'vigente' },
+  { id:'cali',        nombre:'Cali',             depto:'Valle Cauca',  cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 530/2024', norma_fecha:'2024-02-20', portal:true,  cb_state:'degradado', cb_fallos:2, tributos:['ICA','Predial','Vehículos','Reteica'], estado:'vigente' },
+  { id:'barranquilla',nombre:'Barranquilla',     depto:'Atlántico',    cat:1, tarifa:0.005,  tarifa_min:0.003, norma:'Decreto 0621/2022',norma_fecha:'2022-11-05', portal:true,  cb_state:'ok',       cb_fallos:0, tributos:['ICA','Predial','Reteica'], estado:'vigente' },
+  { id:'bucaramanga', nombre:'Bucaramanga',      depto:'Santander',    cat:1, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 019/2023', norma_fecha:'2023-06-15', portal:true,  cb_state:'fallo',    cb_fallos:5, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
+  { id:'cartagena',   nombre:'Cartagena',        depto:'Bolívar',      cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Decreto 1250/2023',norma_fecha:'2023-09-01', portal:true,  cb_state:'ok',       cb_fallos:0, tributos:['ICA','Predial','Reteica'], estado:'vigente' },
+  { id:'cucuta',      nombre:'Cúcuta',           depto:'N. Santander', cat:1, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 034/2022', norma_fecha:'2022-07-20', portal:false, cb_state:null,       cb_fallos:0, tributos:['ICA','Predial'], estado:'vigente' },
+  { id:'pereira',     nombre:'Pereira',          depto:'Risaralda',    cat:1, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 012/2024', norma_fecha:'2024-03-10', portal:true,  cb_state:'ok',       cb_fallos:0, tributos:['ICA','Predial','Estampilla','Reteica'], estado:'vigente' },
+  { id:'manizales',   nombre:'Manizales',        depto:'Caldas',       cat:2, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 815/2023', norma_fecha:'2023-11-22', portal:true,  cb_state:'ok',       cb_fallos:0, tributos:['ICA','Predial','Estampilla'], estado:'vigente' },
+  { id:'ibague',      nombre:'Ibagué',           depto:'Tolima',       cat:2, tarifa:0.0045, tarifa_min:0.002, norma:'Acuerdo 028/2022', norma_fecha:'2022-10-05', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'vigente', ocr_pendiente:false },
+  { id:'villavicencio',nombre:'Villavicencio',   depto:'Meta',         cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 014/2023', norma_fecha:'2023-04-18', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial','Estampilla'], estado:'vigente', ocr_pendiente:false },
+  { id:'neiva',       nombre:'Neiva',            depto:'Huila',        cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 021/2021', norma_fecha:'2021-08-30', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'alerta', ocr_pendiente:true },
+  { id:'armenia',     nombre:'Armenia',          depto:'Quindío',      cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 018/2023', norma_fecha:'2023-07-14', portal:true,  cb_state:'ok', cb_fallos:0, tributos:['ICA','Predial','Reteica'], estado:'vigente', ocr_pendiente:false },
+  { id:'monteria',    nombre:'Montería',         depto:'Córdoba',      cat:2, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 031/2022', norma_fecha:'2022-12-01', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'vigente', ocr_pendiente:true },
+  { id:'sincelejo',   nombre:'Sincelejo',        depto:'Sucre',        cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 009/2021', norma_fecha:'2021-06-15', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'alerta', ocr_pendiente:false },
+  { id:'valledupar',  nombre:'Valledupar',       depto:'Cesar',        cat:2, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 016/2024', norma_fecha:'2024-01-20', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'vigente', ocr_pendiente:false },
+  { id:'pasto',       nombre:'Pasto',            depto:'Nariño',       cat:2, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 042/2023', norma_fecha:'2023-09-08', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial','Estampilla'], estado:'vigente', ocr_pendiente:false },
+  { id:'tunja',       nombre:'Tunja',            depto:'Boyacá',       cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 025/2022', norma_fecha:'2022-11-20', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'vigente', ocr_pendiente:false },
+  { id:'popayan',     nombre:'Popayán',          depto:'Cauca',        cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 030/2022', norma_fecha:'2022-08-10', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial','Estampilla'], estado:'vigente', ocr_pendiente:false },
+  { id:'florencia',   nombre:'Florencia',        depto:'Caquetá',      cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 007/2020', norma_fecha:'2020-10-05', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'critico', ocr_pendiente:true },
+  { id:'riohacha',    nombre:'Riohacha',         depto:'La Guajira',   cat:3, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 011/2021', norma_fecha:'2021-11-30', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'alerta', ocr_pendiente:false },
+  { id:'quibdo',      nombre:'Quibdó',           depto:'Chocó',        cat:4, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 003/2019', norma_fecha:'2019-08-20', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'critico', ocr_pendiente:true },
+  { id:'arauca',      nombre:'Arauca',           depto:'Arauca',       cat:4, tarifa:0.005,  tarifa_min:0.002, norma:'Acuerdo 008/2022', norma_fecha:'2022-05-15', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'vigente', ocr_pendiente:false },
+  { id:'yopal',       nombre:'Yopal',            depto:'Casanare',     cat:4, tarifa:0.004,  tarifa_min:0.002, norma:'Acuerdo 015/2023', norma_fecha:'2023-03-22', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'vigente', ocr_pendiente:false },
+  { id:'mitú',        nombre:'Mitú',             depto:'Vaupés',       cat:5, tarifa:0.005,  tarifa_min:0.003, norma:'Acuerdo 001/2018', norma_fecha:'2018-04-10', portal:false, cb_state:null, cb_fallos:0, tributos:['ICA','Predial'], estado:'critico', ocr_pendiente:true },
 ];
 
 const CIIU_TARIFAS = {
@@ -895,6 +1020,11 @@ const LIQUIDACIONES_RECIENTES = [
 const RESPUESTAS_IA = {
   0: {
     pregunta: '¿Los contratos interadministrativos están gravados con ICA?',
+    fuentes_tecnicas: [
+      { doc_id:'DOC-LAW-001', chunk_idx:12, norma:'Ley 14/1983', articulo:'Art. 33', score:0.94 },
+      { doc_id:'DOC-DEC-001', chunk_idx:8,  norma:'Decreto 1333/1986', articulo:'Art. 195', score:0.91 },
+      { doc_id:'DOC-SEN-001', chunk_idx:3,  norma:'Sentencia C-220/1996', articulo:'', score:0.88 },
+    ],
     respuesta: `**Respuesta:** Los contratos interadministrativos celebrados entre entidades públicas del orden nacional tienen tratamiento especial bajo el régimen del ICA.
 
 **Marco normativo aplicable:**
@@ -913,6 +1043,11 @@ Sin embargo, la **Sentencia C-220 de 1996 de la Corte Constitucional** y la juri
   },
   1: {
     pregunta: '¿Cuál es la tarifa de Reteica para consultoría en Bogotá?',
+    fuentes_tecnicas: [
+      { doc_id:'DOC-MUN-BOG-001', chunk_idx:47, norma:'Acuerdo 820/2021', articulo:'Art. 156', score:0.97 },
+      { doc_id:'DOC-DEC-BOG-001', chunk_idx:9,  norma:'Decreto Distrital 245/2022', articulo:'Art. 4', score:0.93 },
+      { doc_id:'DOC-CON-001',     chunk_idx:2,  norma:'Concepto DIAN 1556/2022', articulo:'', score:0.85 },
+    ],
     respuesta: `**Respuesta:** La tarifa de Retención en la Fuente a título de ICA (ReteICA) para actividades de consultoría en Bogotá D.C. es del **3.3 por mil (3.3‰)** del valor del contrato o del pago.
 
 **Base normativa:**
@@ -928,6 +1063,11 @@ La consultoría (CIIU 7020, 7110, 7112) se clasifica en la actividad de **servic
   },
   2: {
     pregunta: '¿Las entidades de derecho público son sujetos pasivos del predial?',
+    fuentes_tecnicas: [
+      { doc_id:'DOC-LAW-044', chunk_idx:5,  norma:'Ley 44/1990', articulo:'Art. 1', score:0.96 },
+      { doc_id:'DOC-DEC-001', chunk_idx:31, norma:'Decreto 1333/1986', articulo:'Art. 171', score:0.92 },
+      { doc_id:'DOC-CON-002', chunk_idx:1,  norma:'Concepto MinHacienda 1-2022-004512', articulo:'', score:0.87 },
+    ],
     respuesta: `**Respuesta:** **Sí**, las entidades de derecho público son sujetos pasivos del Impuesto Predial Unificado (IPU) respecto de los bienes inmuebles de su propiedad, con algunas excepciones importantes.
 
 **Regla general:**
@@ -944,6 +1084,11 @@ La **Ley 44 de 1990, Art. 1** y el **Decreto 1333 de 1986** establecen que el im
   },
   3: {
     pregunta: '¿Qué pasa si no se declara ICA en la fecha límite?',
+    fuentes_tecnicas: [
+      { doc_id:'DOC-LAW-788', chunk_idx:22, norma:'Ley 788/2002', articulo:'Art. 59', score:0.98 },
+      { doc_id:'DOC-LAW-610', chunk_idx:7,  norma:'Ley 610/2000', articulo:'Art. 6', score:0.94 },
+      { doc_id:'DOC-LAW-734', chunk_idx:14, norma:'Ley 734/2002', articulo:'Art. 48', score:0.89 },
+    ],
     respuesta: `**Respuesta:** El incumplimiento en la declaración del ICA (o Reteica) genera consecuencias económicas y disciplinarias significativas para la entidad y sus funcionarios responsables.
 
 **Consecuencias tributarias:**
@@ -969,6 +1114,11 @@ La **Ley 44 de 1990, Art. 1** y el **Decreto 1333 de 1986** establecen que el im
   },
   4: {
     pregunta: '¿Dónde se radica la estampilla departamental?',
+    fuentes_tecnicas: [
+      { doc_id:'DOC-ORD-ANT-015', chunk_idx:18, norma:'Ordenanza 015/2023 Antioquia', articulo:'Art. 12', score:0.95 },
+      { doc_id:'DOC-LAW-1356',    chunk_idx:4,  norma:'Ley 1356/2009', articulo:'Art. 3', score:0.91 },
+      { doc_id:'DOC-CON-003',     chunk_idx:6,  norma:'Concepto MinHacienda 2-2023-007891', articulo:'', score:0.83 },
+    ],
     respuesta: `**Respuesta:** La radicación de la estampilla departamental varía según el tipo de estampilla y el departamento. En Colombia existen múltiples tipos de estampillas creadas por ordenanzas departamentales.
 
 **Tipos más comunes que afectan a INVIAS:**
@@ -1273,7 +1423,12 @@ function renderJurisdicciones(data) {
       <td class="px-4 py-3 font-mono text-sm">${(m.tarifa*1000).toFixed(1)}‰</td>
       <td class="px-4 py-3 text-xs">${m.norma}<div class="text-slate-400">${m.norma_fecha}</div></td>
       <td class="px-4 py-3">${badgeEstado(estadoNorma)}</td>
-      <td class="px-4 py-3">${m.portal ? '<span class="text-green-600 text-xs font-medium">API ✓</span>' : '<span class="text-slate-400 text-xs">Manual</span>'}</td>
+      <td class="px-4 py-3">${
+        !m.portal ? '<span class="text-slate-400 text-xs">Manual</span>' :
+        m.cb_state === 'ok'       ? '<span class="text-green-600 text-xs font-medium">API ✓ <span class="text-slate-400 font-normal">(CB ok)</span></span>' :
+        m.cb_state === 'degradado'? `<span class="text-amber-600 text-xs font-medium">⚡ Degradado <span class="text-amber-500 font-normal">(${m.cb_fallos} fallos)</span></span>` :
+        m.cb_state === 'fallo'    ? `<span class="text-red-600 text-xs font-medium">🔴 CB abierto — manual <span class="font-normal text-red-400">(${m.cb_fallos} fallos)</span></span>` : ''
+      }</td>
     </tr>`;
   }).join('');
 }
@@ -1364,12 +1519,27 @@ function calcularLiquidacion() {
         </div>
       </div>
 
+      ${mun.cat >= 5 ? `
+      <div class="bg-red-50 border border-red-300 rounded-lg p-3 text-xs mb-1">
+        <div class="font-bold text-red-700 mb-1">⚠️ DATOS PENDIENTE VERIFICACIÓN — Municipio Categoría ${mun.cat}</div>
+        <div class="text-red-600">
+          La tarifa aplicada es una <strong>estimación</strong> basada en la norma más reciente disponible
+          (${mun.norma}, ${mun.norma_fecha}). Los municipios de categoría 5-6 no tienen portal digital ni
+          publicación normativa confiable. <strong>Verificar con la Secretaría de Hacienda municipal antes de declarar.</strong>
+        </div>
+        <div class="mt-1.5 text-red-500">
+          Fuente aplicada (nivel 3): Tarifa anterior indexada por IPC. Contactar corresponsal para confirmación.
+        </div>
+      </div>` : ''}
       <div class="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs">
         <div class="font-medium text-amber-700 mb-1">Obligaciones derivadas de esta retención</div>
         <div class="text-amber-600">
           La retención de ${fmt(retencion)} debe declararse y pagarse a la Secretaría de Hacienda de ${mun.nombre}
           antes del último día hábil del mes siguiente al pago.
-          ${mun.portal ? ' Portal disponible: radicación automática habilitada.' : ' Radicación: proceso manual (municipio sin portal digital).'}
+          ${mun.cb_state === 'fallo' ? ' <strong>⚡ Portal en fallo (CB abierto)</strong> — usar flujo manual.' :
+            mun.cb_state === 'degradado' ? ' Portal degradado — verificar disponibilidad antes de radicar.' :
+            mun.portal ? ' Portal disponible: radicación automática habilitada.' :
+            ' Radicación: proceso manual (municipio sin portal digital).'}
         </div>
       </div>
 
@@ -1432,6 +1602,47 @@ function initDeclaraciones() {
 // ═══════════════════════════════════════════════════════════
 
 function initNormativa() {
+  // OCR pendientes — municipios con documentos escaneados en cola
+  const ocrDocs = [
+    { municipio:'Florencia (Caquetá)',  norma:'Acuerdo 007/2020', tipo:'PDF escaneado', score_ocr:0.61, accion:'Enviado a corresponsal' },
+    { municipio:'Montería (Córdoba)',   norma:'Acuerdo 031/2022', tipo:'PDF escaneado', score_ocr:0.78, accion:'OCR completado — pendiente validación' },
+    { municipio:'Quibdó (Chocó)',       norma:'Acuerdo 003/2019', tipo:'PDF escaneado', score_ocr:0.54, accion:'Enviado a corresponsal' },
+    { municipio:'Mitú (Vaupés)',        norma:'Acuerdo 001/2018', tipo:'Formato Publisher', score_ocr: null, accion:'Requiere transcripción manual' },
+    { municipio:'Neiva (Huila)',        norma:'Acuerdo 021/2021', tipo:'PDF escaneado', score_ocr:0.82, accion:'OCR completado — pendiente validación' },
+  ];
+  document.getElementById('ocr-pendientes').innerHTML = ocrDocs.map(d => {
+    const scoreColor = d.score_ocr === null ? 'text-red-600' :
+                       d.score_ocr >= 0.7  ? 'text-green-600' : 'text-red-600';
+    const scoreLabel = d.score_ocr === null ? 'N/A' : (d.score_ocr * 100).toFixed(0) + '%';
+    const accionBg   = d.score_ocr !== null && d.score_ocr >= 0.7
+      ? 'bg-amber-50 border-amber-200 text-amber-700'
+      : 'bg-red-50 border-red-200 text-red-700';
+    return `<div class="flex items-center gap-3 border rounded p-2 ${accionBg}">
+      <span class="text-base">${d.score_ocr !== null && d.score_ocr >= 0.7 ? '🔶' : '🔴'}</span>
+      <div class="flex-1">
+        <span class="font-medium">${d.municipio}</span>
+        <span class="text-slate-500 ml-1">— ${d.norma}</span>
+        <span class="ml-1 text-slate-400">(${d.tipo})</span>
+      </div>
+      <span class="font-mono ${scoreColor} text-xs">OCR: ${scoreLabel}</span>
+      <span class="text-xs">${d.accion}</span>
+    </div>`;
+  }).join('');
+
+  // Salud normativa — días sin actualizar (equivalente a EXTRACT(DAY FROM NOW() - MAX(indexado_en)))
+  const HOY = new Date('2026-04-07');
+  const saludData = MUNICIPIOS.slice(0, 9).map(m => {
+    const diasSinAct = Math.floor((HOY - new Date(m.norma_fecha)) / (1000*60*60*24));
+    const color = diasSinAct < 365 ? 'text-green-600' : diasSinAct < 1095 ? 'text-amber-600' : 'text-red-600';
+    const bg    = diasSinAct < 365 ? 'bg-green-50 border-green-200' : diasSinAct < 1095 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+    return `<div class="border rounded p-2 ${bg}">
+      <div class="font-medium text-xs text-slate-700">${m.nombre}</div>
+      <div class="text-xs ${color} font-semibold mt-0.5">${diasSinAct} días sin actualizar</div>
+      <div class="text-xs text-slate-400">${m.norma}</div>
+    </div>`;
+  });
+  document.getElementById('salud-normativa').innerHTML = saludData.join('');
+
   const tbody = document.getElementById('tabla-normativa');
   tbody.innerHTML = NORMATIVA.map(n => {
     const estadoClass = n.estado === 'Vigente' ? 'badge-verde' :
@@ -1480,10 +1691,16 @@ function initAuditoria() {
 
 let isTyping = false;
 
+// Detecta si la consulta menciona un municipio cat. 5-6
+function detectarCat56(texto) {
+  const muns56 = MUNICIPIOS.filter(m => m.cat >= 5).map(m => m.nombre.toLowerCase());
+  return muns56.some(n => texto.toLowerCase().includes(n.split(' ')[0].toLowerCase()));
+}
+
 function preguntaRapida(idx) {
   const data = RESPUESTAS_IA[idx];
   addUserMessage(data.pregunta);
-  setTimeout(() => addBotMessage(data.respuesta), 800);
+  setTimeout(() => addBotMessage(data.respuesta, data.fuentes_tecnicas || [], false), 800);
 }
 
 function enviarMensaje() {
@@ -1493,16 +1710,19 @@ function enviarMensaje() {
   input.value = '';
   addUserMessage(texto);
 
-  // Buscar respuesta
   const textoLower = texto.toLowerCase();
   let respuesta = null;
+  let fuentes = [];
+  const esCat56 = detectarCat56(texto);
 
   // Buscar en respuestas fijas
   for (const [k, v] of Object.entries(RESPUESTAS_IA)) {
     if (v.pregunta.toLowerCase().includes(textoLower.slice(0,20)) ||
         textoLower.includes(k == '0' ? 'interadministrativ' :
           k == '1' ? 'tarifa' : k == '2' ? 'predial' : k == '3' ? 'sancion' : 'estampilla')) {
-      respuesta = v.respuesta; break;
+      respuesta = v.respuesta;
+      fuentes = v.fuentes_tecnicas || [];
+      break;
     }
   }
   // Buscar en genéricas
@@ -1513,11 +1733,13 @@ function enviarMensaje() {
       }
     }
   }
+  // Guardrail: rechazar en lugar de inventar cuando no hay corpus suficiente
   if (!respuesta) {
-    respuesta = `**Consultando base normativa...**\n\nHe buscado en los ${1842} documentos indexados relacionados con tu consulta sobre "${texto}".\n\nPara esta pregunta específica, le recomiendo:\n1. Verificar el estatuto tributario del municipio de interés en la sección "Base Normativa"\n2. Consultar los conceptos de la DIAN disponibles en el sistema\n3. Si requiere un análisis más detallado, un profesional tributario debe revisar el caso específico\n\n*Esta respuesta es de carácter orientativo. La base normativa se actualiza continuamente.*`;
+    respuesta = `**Información insuficiente en el corpus normativo**\n\nLa consulta sobre _"${texto}"_ no encontró documentos con similitud ≥ 0.75 en los ${1842} fragmentos indexados.\n\n**Por qué no respondo:**\nEl sistema está configurado para rechazar respuestas cuando no puede citar una fuente verificada (doc_id + chunk_index). Generar una respuesta sin soporte normativo constituiría desinformación jurídica.\n\n**Opciones:**\n1. Reformular la consulta mencionando el municipio y tipo de tributo específico\n2. Revisar directamente la sección **Base Normativa** del sistema\n3. Contactar al especialista tributario de CONSISA para análisis del caso`;
+    fuentes = [];
   }
 
-  setTimeout(() => addBotMessage(respuesta), 900);
+  setTimeout(() => addBotMessage(respuesta, fuentes, esCat56), 900);
 }
 
 function addUserMessage(texto) {
@@ -1529,25 +1751,46 @@ function addUserMessage(texto) {
   messages.scrollTop = messages.scrollHeight;
 }
 
-function addBotMessage(texto) {
+function addBotMessage(texto, fuentes = [], esCat56 = false) {
   isTyping = true;
   const messages = document.getElementById('chat-messages');
-  // Convert markdown-like to HTML
   const html = texto
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
     .replace(/\n\n/g, '</p><p class="mt-2">')
     .replace(/\n/g, '<br>')
     .replace(/^/, '<p>')
     .replace(/$/, '</p>');
 
+  // Bloque de fuentes técnicas con doc_id + chunk_index
+  const fuentesHTML = fuentes.length > 0 ? `
+    <div class="mt-3 pt-2 border-t border-slate-200">
+      <div class="text-xs font-semibold text-slate-500 mb-1.5">Fragmentos recuperados (RAG)</div>
+      <div class="space-y-1">
+        ${fuentes.map(f => `
+          <div class="flex items-start gap-2 text-xs bg-slate-50 rounded px-2 py-1">
+            <span class="text-blue-500 font-mono shrink-0">${f.doc_id}</span>
+            <span class="text-slate-400 shrink-0">chunk #${f.chunk_idx}</span>
+            <span class="text-slate-600 flex-1">${f.norma}${f.articulo ? ' · ' + f.articulo : ''}</span>
+            <span class="text-green-600 font-medium shrink-0">${Math.round(f.score*100)}%</span>
+          </div>`).join('')}
+      </div>
+    </div>` : `
+    <div class="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-400 flex items-center gap-1">
+      <span>🔒</span> Respuesta basada en base normativa verificada
+    </div>`;
+
+  // Warning cat. 5-6
+  const cat56HTML = esCat56 ? `
+    <div class="mt-2 bg-orange-50 border border-orange-200 rounded px-3 py-2 text-xs text-orange-700">
+      <strong>⚠️ DATOS PENDIENTE VERIFICACIÓN</strong> — Municipio categoría 5 o 6.
+      La información normativa puede estar desactualizada. Confirmar con la Secretaría de Hacienda municipal.
+    </div>` : '';
+
   messages.innerHTML += `<div class="flex gap-3">
     <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs shrink-0">AI</div>
-    <div class="chat-bubble-bot px-4 py-3 text-sm max-w-2xl">${html}
-      <div class="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-400 flex items-center gap-1">
-        <span>🔒</span> Respuesta basada en base normativa verificada
-      </div>
-    </div>
+    <div class="chat-bubble-bot px-4 py-3 text-sm max-w-2xl">${html}${cat56HTML}${fuentesHTML}</div>
   </div>`;
   messages.scrollTop = messages.scrollHeight;
   isTyping = false;
